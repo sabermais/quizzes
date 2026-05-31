@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌍 Quiz — A Primeira Guerra Mundial</title>
+<style>
+  :root{
+    --bg:#060610; --card:#0E0E1F; --card2:#15152B;
+    --accent:#3B82F6; --accent2:#7C5CFF;
+    --ok:#00A86B; --err:#E53935;
+    --txt:#EAEAF5; --muted:#9A9AB5; --border:#262642;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:var(--sans); background:
+      radial-gradient(900px 500px at 110% -5%, rgba(124,92,255,.18), transparent 60%),
+      radial-gradient(800px 500px at -10% 0%, rgba(59,130,246,.16), transparent 55%),
+      var(--bg);
+    color:var(--txt); min-height:100vh; line-height:1.55; -webkit-font-smoothing:antialiased;
+    padding:0 0 60px;
+  }
+  .wrap{max-width:720px; margin:0 auto; padding:20px 18px;}
+
+  /* Barra de progresso */
+  .progress-shell{position:sticky; top:0; z-index:20; background:rgba(6,6,16,.85); backdrop-filter:blur(8px); padding:12px 0 10px;}
+  .progress-track{height:10px; background:#1B1B33; border-radius:999px; overflow:hidden; box-shadow:inset 0 0 0 1px var(--border);}
+  .progress-fill{height:100%; width:0%; border-radius:999px; background:linear-gradient(90deg,var(--accent),var(--accent2)); transition:width .4s cubic-bezier(.4,0,.2,1); box-shadow:0 0 12px rgba(124,92,255,.7);}
+  .meta{display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:.9rem; color:var(--muted); font-weight:700;}
+  .streak{display:flex; align-items:center; gap:6px; opacity:0; transform:scale(.6); transition:.3s; color:#FF8A3D;}
+  .streak.show{opacity:1; transform:scale(1);}
+  .streak.pop{animation:pop .4s;}
+  @keyframes pop{0%{transform:scale(1);}50%{transform:scale(1.35);}100%{transform:scale(1);}}
+
+  /* Cabeçalho */
+  .head{text-align:center; padding:26px 10px 10px;}
+  .head .tag{display:inline-block; font-size:.74rem; letter-spacing:.16em; text-transform:uppercase; font-weight:800;
+    color:#fff; background:linear-gradient(90deg,var(--accent),var(--accent2)); padding:5px 14px; border-radius:999px; margin-bottom:14px;}
+  .head h1{font-size:1.7rem; font-weight:900; letter-spacing:-.5px; line-height:1.15;}
+  .head p{color:var(--muted); margin-top:8px; font-weight:600;}
+
+  /* Card de questão */
+  .card{background:linear-gradient(180deg,var(--card),var(--card2)); border:1px solid var(--border); border-radius:20px;
+    padding:24px 22px; margin-top:18px; box-shadow:0 20px 50px -24px rgba(0,0,0,.8);}
+  .qnum{font-size:.82rem; font-weight:800; color:var(--accent); letter-spacing:.04em; text-transform:uppercase;}
+  .lvl{display:inline-block; background:rgba(229,57,53,.18); color:#FF6B68; border:1px solid rgba(229,57,53,.5);
+    font-size:.64rem; padding:2px 9px; border-radius:999px; margin-left:7px; letter-spacing:.08em; vertical-align:middle;}
+  .qtext{font-size:1.18rem; font-weight:800; margin:8px 0 18px; line-height:1.4;}
+
+  .opt{display:flex; align-items:flex-start; gap:12px; width:100%; text-align:left; cursor:pointer;
+    background:#10101F; border:1.5px solid var(--border); color:var(--txt); border-radius:14px;
+    padding:14px 16px; margin:10px 0; font-size:1rem; font-weight:600; font-family:inherit; transition:.18s;}
+  .opt:hover:not(:disabled){border-color:var(--accent); box-shadow:0 0 0 3px rgba(59,130,246,.15); transform:translateY(-1px);}
+  .opt .letter{flex:none; width:28px; height:28px; border-radius:8px; background:#1E1E3A; color:var(--accent);
+    display:grid; place-items:center; font-weight:900; font-size:.9rem; transition:.18s;}
+  .opt .mark{margin-left:auto; font-size:1.1rem; opacity:0;}
+  .opt.correct{background:rgba(0,168,107,.16); border-color:var(--ok);}
+  .opt.correct .letter{background:var(--ok); color:#fff;}
+  .opt.correct .mark{opacity:1;}
+  .opt.wrong{background:rgba(229,57,53,.14); border-color:var(--err);}
+  .opt.wrong .letter{background:var(--err); color:#fff;}
+  .opt.wrong .mark{opacity:1;}
+  .opt:disabled{cursor:default;}
+
+  /* Feedback */
+  .fb{margin-top:16px; border-radius:14px; padding:16px 18px; font-size:.98rem; display:none; border-left:5px solid;}
+  .fb.show{display:block; animation:fade .35s;}
+  .fb.ok{background:rgba(0,168,107,.10); border-color:var(--ok);}
+  .fb.no{background:rgba(229,57,53,.10); border-color:var(--err);}
+  .fb .fbtitle{font-weight:900; margin-bottom:5px; display:flex; align-items:center; gap:7px;}
+  .fb.ok .fbtitle{color:#3DDC97;} .fb.no .fbtitle{color:#FF6B68;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);}to{opacity:1; transform:none;}}
+
+  .next{margin-top:18px; width:100%; padding:15px; border:0; border-radius:14px; cursor:pointer;
+    font-family:inherit; font-size:1.05rem; font-weight:800; color:#fff;
+    background:linear-gradient(90deg,var(--accent),var(--accent2)); box-shadow:0 10px 26px -10px rgba(124,92,255,.7);
+    display:none; transition:.18s;}
+  .next:hover{transform:translateY(-2px);}
+  .next.show{display:block;}
+
+  /* Tela final */
+  .final{text-align:center; padding:36px 22px;}
+  .final .medal{font-size:5rem; animation:pop .6s;}
+  .final h2{font-size:1.8rem; font-weight:900; margin:6px 0;}
+  .final .score{font-size:1.1rem; color:var(--muted); font-weight:700;}
+  .final .pct{font-size:3.2rem; font-weight:900; background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; margin:10px 0;}
+  .final .stats{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin:18px 0 26px;}
+  .final .stat{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 20px; min-width:120px;}
+  .final .stat .big{font-size:1.6rem; font-weight:900;}
+  .final .stat .lbl{font-size:.78rem; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.05em;}
+  .restart{padding:14px 28px; border:0; border-radius:14px; cursor:pointer; font-family:inherit; font-size:1.05rem;
+    font-weight:800; color:#fff; background:linear-gradient(90deg,var(--accent),var(--accent2)); box-shadow:0 10px 26px -10px rgba(124,92,255,.7);}
+  .restart:hover{transform:translateY(-2px);}
+
+  /* Confete */
+  .confetti{position:fixed; top:-12px; width:10px; height:14px; z-index:50; pointer-events:none; border-radius:2px;}
+
+  .hidden{display:none;}
+  @media(max-width:480px){ .head h1{font-size:1.4rem;} .qtext{font-size:1.08rem;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="progress-shell">
+    <div class="progress-track"><div class="progress-fill" id="pfill"></div></div>
+    <div class="meta">
+      <span id="counter">Questão 1 de 29</span>
+      <span class="streak" id="streak">🔥 <span id="streakn">0</span> seguidas</span>
+    </div>
+  </div>
+
+  <div id="quiz">
+    <div class="head">
+      <span class="tag">História • 9º ano</span>
+      <h1>🌍 A Primeira Guerra Mundial</h1>
+      <p>29 questões • escolha a alternativa correta e veja a explicação</p>
+    </div>
+    <div id="cardArea"></div>
+  </div>
+
+  <div id="finalScreen" class="final hidden"></div>
+</div>
+
+<script>
+const QUESTIONS = [
+ {q:"Em que período ocorreu a Primeira Guerra Mundial?",
+  o:["1914 a 1918","1939 a 1945","1900 a 1910","1918 a 1925"],c:0,
+  fb:"A Primeira Guerra durou de 1914 a 1918. O período de 1939–1945 corresponde à Segunda Guerra Mundial."},
+
+ {q:"O nacionalismo apareceu em várias versões. O <b>pangermanismo</b> defendia:",
+  o:["Unir todos os povos de origem germânica (Alemanha e Áustria-Hungria)","Unir todos os povos eslavos","Vingar a França e retomar a Alsácia-Lorena","Libertar os Bálcãs do domínio turco"],c:0,
+  fb:"Pangermanismo = unir os povos germânicos. Unir eslavos era o pan-eslavismo (Rússia/Sérvia); a vingança francesa era o revanchismo."},
+
+ {q:"O <b>revanchismo</b> era a ideia de qual país, e que território ele queria retomar?",
+  o:["França — a Alsácia-Lorena","Rússia — a Bósnia","Alemanha — a Polônia","Itália — a Sérvia"],c:0,
+  fb:"O revanchismo era francês: a França queria vingar a derrota de 1870 e recuperar a Alsácia-Lorena, perdida para a Alemanha."},
+
+ {q:"Qual região ficou conhecida como o <b>“barril de pólvora”</b> da Europa?",
+  o:["Os Bálcãs (sudeste europeu)","A Escandinávia","A Península Ibérica","As Ilhas Britânicas"],c:0,
+  fb:"Os Bálcãs concentravam povos recém-independentes e a disputa entre Rússia e Áustria-Hungria — uma das causas diretas da guerra."},
+
+ {q:"Quais países formavam a <b>Tríplice Entente</b>?",
+  o:["Inglaterra, França e Rússia","Alemanha, Áustria-Hungria e Itália","Inglaterra, Alemanha e EUA","França, Itália e Turquia"],c:0,
+  fb:"Entente = Inglaterra, França e Rússia. Macete: a Inglaterra está na Entente. Alemanha + Áustria-Hungria + Itália formavam a Tríplice Aliança."},
+
+ {q:"No início, a <b>Tríplice Aliança</b> era composta por:",
+  o:["Alemanha, Áustria-Hungria e Itália","Inglaterra, França e Rússia","Alemanha, Rússia e Japão","Áustria-Hungria, Sérvia e Grécia"],c:0,
+  fb:"A Tríplice Aliança original tinha Alemanha, Áustria-Hungria e Itália — mas a Itália depois mudaria de lado."},
+
+ {q:"O que foi a <b>Paz Armada</b>?",
+  o:["Um período de corrida armamentista e tensão, ANTES da guerra","Um tratado que acabou com a guerra","Uma época em que os países desarmaram seus exércitos","Um acordo de paz entre Entente e Aliança"],c:0,
+  fb:"Pegadinha clássica! A Paz Armada NÃO foi paz: era um clima tenso de corrida armamentista, todos esperando o estopim."},
+
+ {q:"O <b>estopim</b> da guerra, em 28/06/1914, foi o assassinato, em Sarajevo, de:",
+  o:["O arquiduque Francisco Ferdinando","O imperador Guilherme II","O czar Nicolau II","O presidente Woodrow Wilson"],c:0,
+  fb:"O herdeiro do trono austro-húngaro, Francisco Ferdinando, foi assassinado em Sarajevo — o gatilho da reação em cadeia."},
+
+ {q:"Quem cometeu o atentado de Sarajevo?",
+  o:["Gavrilo Princip, da organização Mão Negra","Otto von Bismarck","Um soldado alemão anônimo","O próprio arquiduque, por acidente"],c:0,
+  fb:"Gavrilo Princip, estudante sérvio ligado à Mão Negra e ao pan-eslavismo, foi o autor do atentado."},
+
+ {q:"Sobre a <b>Itália</b> na guerra, é correto afirmar que:",
+  o:["Começou na Tríplice Aliança, mas lutou pela Entente","Ficou neutra do começo ao fim","Liderou a Tríplice Aliança até o final","Nunca participou do conflito"],c:0,
+  fb:"Pegadinha! A Itália trocou de lado: saiu da Aliança e entrou na Entente esperando ganhar territórios com a vitória."},
+
+ {q:"Em que ano e por qual motivo o <b>Brasil</b> entrou na guerra?",
+  o:["1917, após navios brasileiros serem torpedeados por submarinos alemães","1914, por aliança militar com a Inglaterra","1918, sem nenhum motivo específico","1916, para defender suas colônias"],c:0,
+  fb:"O Brasil era neutro, mas em 1917 submarinos alemães afundaram navios como o Paraná e o Macau — então entrou ao lado da Entente."},
+
+ {q:"Qual foi um efeito econômico <b>positivo</b> da guerra para o Brasil?",
+  o:["O crescimento da indústria nacional (substituição de importações)","O aumento das exportações de café","A valorização da moeda brasileira","O fim do desemprego no campo"],c:0,
+  fb:"Como faltavam produtos importados, a indústria nacional cresceu para produzir aqui o que antes vinha de fora. As exportações de café, ao contrário, caíram."},
+
+ {q:"Como era a vida nas <b>trincheiras</b>?",
+  o:["Meses na lama, com ratos e doenças, avançando pouquíssimos metros","Confortável, com boa estrutura e comida","Curta: os combates duravam poucos dias","Sem contato com o inimigo"],c:0,
+  fb:"As trincheiras eram um inferno de lama, arame farpado, ratos e doenças — e, após meses de sofrimento, o avanço era de poucos metros."},
+
+ {q:"As <b>armas químicas</b> da Primeira Guerra se destacaram porque:",
+  o:["Eram gases tóxicos que matavam sem que um tiro fosse disparado","Eram bombas atômicas de alto poder","Só serviam para assustar, sem causar mortes","Foram usadas apenas no mar"],c:0,
+  fb:"Os gases asfixiantes matavam milhares sem um único tiro. Por isso soldados passaram a usar máscaras (a bomba atômica só surgiria na 2ª Guerra)."},
+
+ {q:"Sobre as <b>metralhadoras</b>, qual afirmação está correta?",
+  o:["Já existiam antes (desde a Guerra de Secessão) e foram aperfeiçoadas e usadas em massa","Foram inventadas durante a Primeira Guerra","Nunca chegaram a ser usadas em combate","Eram armas exclusivas da marinha"],c:0,
+  fb:"Pegadinha! As metralhadoras não nasceram na 1ª Guerra — existiam desde a Guerra de Secessão (1861–65). O que mudou foi o uso em massa."},
+
+ {q:"Em 1917–1918, dois fatos mudaram o rumo da guerra:",
+  o:["Os EUA entraram (1917) e a Rússia saiu (1918, por causa da revolução)","Os EUA saíram e a Rússia entrou","Alemanha e Itália se aliaram pela primeira vez","O Brasil declarou-se neutro"],c:0,
+  fb:"A entrada dos EUA reforçou a Entente, enquanto a Rússia, em revolução comunista, fez paz com a Alemanha e abandonou o conflito."},
+
+ {q:"O <b>Tratado de Versalhes</b> (1919) se caracterizou por:",
+  o:["Punir duramente a Alemanha: perda de território/colônias, indenização e exército reduzido","Perdoar a Alemanha de qualquer culpa","Dividir igualmente os ganhos entre todos","Devolver colônias à Alemanha"],c:0,
+  fb:"A Alemanha perdeu colônias e 1/8 do território, teve o exército reduzido a 100 mil homens e pagou pesada indenização."},
+
+ {q:"Por que os alemães chamaram o acordo de <b>“Ditado” de Versalhes</b>?",
+  o:["Porque foi imposto a eles, não negociado","Porque foi escrito por um ditador","Porque ninguém o assinou","Porque era um discurso, não um tratado"],c:0,
+  fb:"A promessa de “paz sem vencedores” não se cumpriu: as condições foram impostas à Alemanha. Essa humilhação plantaria a semente da 2ª Guerra."},
+
+ {q:"Sobre a <b>gripe espanhola</b> (1918), é correto dizer que:",
+  o:["Não começou na Espanha; o nome veio porque a imprensa espanhola (sem censura) noticiava os casos","Surgiu na Espanha e ficou restrita a ela","Foi criada como arma de guerra","Só atingiu soldados, nunca civis"],c:0,
+  fb:"Pegadinha! A pandemia provavelmente começou em campos militares dos EUA. Como a Espanha era neutra e sem censura, sua imprensa noticiava — daí o apelido."},
+
+ {q:"A participação <b>feminina</b> durante a guerra resultou em:",
+  o:["Mulheres assumindo fábricas e empregos, impulsionando a luta por direitos (como o voto)","Nenhuma mudança no papel da mulher","A proibição do trabalho feminino","A saída das mulheres do mercado de trabalho"],c:0,
+  fb:"Com os homens no front, as mulheres ocuparam fábricas e serviços. Essa força de trabalho acelerou conquistas como o direito ao voto."},
+
+ {q:"Qual frase, atribuída a Paul Valéry, resume o trauma da guerra?",
+  o:["“Sabemos agora que somos mortais”","“A sorte está lançada”","“Penso, logo existo”","“O futuro a Deus pertence”"],c:0,
+  fb:"“Nós, as civilizações, sabemos agora que somos mortais” — a frase resume o fim da crença cega no progresso e dá título ao capítulo."},
+
+ {q:"Por que a <b>Segunda Revolução Industrial</b> impulsionou diretamente o imperialismo do fim do século XIX?",lvl:"AVANÇADA",
+  o:["A alta produção exigia novos mercados, matérias-primas e fontes de energia, levando à disputa por colônias","Porque os operários europeus queriam emigrar em massa para as colônias","Porque as colônias produziam mais bens industriais que as metrópoles","Porque a indústria havia entrado em colapso e precisava de ajuda externa"],c:0,
+  fb:"A superprodução criou a necessidade de garantir mercados consumidores e recursos. Daí a corrida imperialista (neocolonialismo) por território na Ásia, África e América."},
+
+ {q:"Qual das opções é a causa <b>IMEDIATA</b> (estopim) — e NÃO uma causa profunda — da guerra?",lvl:"AVANÇADA",
+  o:["O assassinato do arquiduque Francisco Ferdinando em Sarajevo","O imperialismo e a disputa por mercados","O nacionalismo exacerbado das potências","A rivalidade entre os blocos de alianças militares"],c:0,
+  fb:"O imperialismo, o nacionalismo e a rivalidade entre as alianças são causas profundas (estruturais), acumuladas por décadas. Já o atentado de Sarajevo foi a causa imediata — o estopim que disparou tudo."},
+
+ {q:"Por que o atentado em Sarajevo, cometido por um sérvio, arrastou tão rápido a <b>Rússia</b> para o conflito?",lvl:"AVANÇADA",
+  o:["Pelo pan-eslavismo: a Rússia se via como protetora dos povos eslavos, incluindo a Sérvia","Porque a Rússia possuía colônias na Bósnia","Porque a Rússia fazia parte da Tríplice Aliança","Porque o arquiduque assassinado era de origem russa"],c:0,
+  fb:"Defensora do pan-eslavismo, a Rússia apoiou a Sérvia. Quando a Áustria-Hungria atacou os sérvios, a Rússia entrou — e as alianças puxaram o resto."},
+
+ {q:"A expressão “<b>bourrage de crâne</b>” (lavagem cerebral) e a ideia de que “a primeira vítima da guerra é a verdade” referem-se a:",lvl:"AVANÇADA",
+  o:["À manipulação de informações pela propaganda e censura para manter o apoio popular","Às técnicas de tortura usadas dentro das trincheiras","Ao efeito dos gases tóxicos sobre o cérebro dos soldados","À estratégia militar de cercar e isolar o inimigo"],c:0,
+  fb:"Os governos demonizavam o inimigo, escondiam derrotas e exageravam vitórias. Era propaganda e censura — manipular a verdade para sustentar a guerra."},
+
+ {q:"O que melhor explica o caráter verdadeiramente “<b>mundial</b>” do conflito?",lvl:"AVANÇADA",
+  o:["O capitalismo já estava espalhado pelo planeta, e colônias e nações foram arrastadas junto com as potências","O fato de ter havido batalhas em todos os continentes do mundo","O fato de ter sido a primeira guerra de toda a história","A duração: o conflito teria passado de dez anos"],c:0,
+  fb:"Com o capitalismo globalizado, a briga entre potências respingou no mundo: as colônias entraram junto e países independentes foram pressionados a escolher um lado."},
+
+ {q:"Entre as imposições do <b>Tratado de Versalhes</b> à Alemanha, o que NÃO se inclui?",lvl:"AVANÇADA",
+  o:["A obrigação de adotar um governo comunista","Uma zona desmilitarizada na fronteira com a França","O “corredor polonês”, ligando a Polônia ao mar Báltico","A redução do exército a 100 mil homens"],c:0,
+  fb:"Versalhes impôs perdas territoriais, zona desmilitarizada, corredor polonês, exército reduzido e indenização — mas não exigiu comunismo (a Alemanha tornou-se uma República)."},
+
+ {q:"A desintegração do <b>Império Turco-Otomano</b> após a guerra teve como consequência de longo prazo:",lvl:"AVANÇADA",
+  o:["A divisão do Oriente Médio entre potências (mandatos), criando focos de conflitos futuros","A unificação pacífica de todo o mundo árabe sob um só governo","A devolução imediata de todos os territórios à Turquia","O fim definitivo de qualquer tensão na região"],c:0,
+  fb:"O território otomano foi repartido — Síria e Líbano sob a França; Iraque, Transjordânia e Palestina sob a Inglaterra — semeando conflitos que perduram até hoje."},
+
+ {q:"A comparação entre a <b>gripe espanhola</b> (1918) e a <b>Covid-19</b> evidencia, sobretudo:",lvl:"AVANÇADA",
+  o:["O avanço da ciência: na Covid o vírus foi sequenciado e vacinas surgiram rápido, algo impensável em 1918","Que as duas pandemias tiveram exatamente o mesmo número de mortos","Que em 1918 já existiam vacinas eficazes contra a influenza","Que a Covid-19 foi muito menos contagiosa que a gripe espanhola"],c:0,
+  fb:"Em 1918 os cientistas nem viam o vírus e não havia vacina — só máscaras e isolamento. Na Covid, o sequenciamento e as vacinas em tempo recorde mostram o salto da ciência."},
+];
+
+let idx=0, score=0, streak=0, bestStreak=0, answered=false;
+const cardArea=document.getElementById('cardArea');
+const pfill=document.getElementById('pfill');
+const counter=document.getElementById('counter');
+const streakEl=document.getElementById('streak');
+const streakN=document.getElementById('streakn');
+
+function shuffled(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function render(){
+  answered=false;
+  const item=QUESTIONS[idx];
+  counter.textContent=`Questão ${idx+1} de ${QUESTIONS.length}`;
+  pfill.style.width=`${(idx/QUESTIONS.length)*100}%`;
+  const letters=['A','B','C','D'];
+  const order=shuffled([0,1,2,3]);
+  let opts=order.map((orig,pos)=>`
+    <button class="opt" data-i="${orig}" onclick="choose(${orig})">
+      <span class="letter">${letters[pos]}</span>
+      <span class="otext">${item.o[orig]}</span>
+      <span class="mark"></span>
+    </button>`).join('');
+  cardArea.innerHTML=`
+    <div class="card">
+      <div class="qnum">Questão ${idx+1}${item.lvl?` <span class="lvl">🔴 ${item.lvl}</span>`:''}</div>
+      <div class="qtext">${item.q}</div>
+      <div id="opts">${opts}</div>
+      <div class="fb" id="fb"></div>
+      <button class="next" id="next" onclick="nextQ()">${idx===QUESTIONS.length-1?'Ver resultado 🏁':'Próxima →'}</button>
+    </div>`;
+}
+
+function choose(i){
+  if(answered) return;
+  answered=true;
+  const item=QUESTIONS[idx];
+  const btns=document.querySelectorAll('.opt');
+  btns.forEach(b=>{
+    const bi=+b.dataset.i;
+    b.disabled=true;
+    if(bi===item.c){ b.classList.add('correct'); b.querySelector('.mark').textContent='✅'; }
+    if(bi===i && i!==item.c){ b.classList.add('wrong'); b.querySelector('.mark').textContent='❌'; }
+  });
+  const fb=document.getElementById('fb');
+  const correct = i===item.c;
+  if(correct){
+    score++; streak++; bestStreak=Math.max(bestStreak,streak);
+    fb.className='fb ok show';
+    fb.innerHTML=`<div class="fbtitle">✅ Acertou!</div>${item.fb}`;
+  } else {
+    streak=0;
+    fb.className='fb no show';
+    fb.innerHTML=`<div class="fbtitle">❌ Não foi dessa vez</div>${item.fb}`;
+  }
+  updateStreak();
+  document.getElementById('next').classList.add('show');
+}
+
+function updateStreak(){
+  if(streak>=2){
+    streakN.textContent=streak;
+    streakEl.classList.add('show');
+    streakEl.classList.remove('pop'); void streakEl.offsetWidth; streakEl.classList.add('pop');
+  } else {
+    streakEl.classList.remove('show');
+  }
+}
+
+function nextQ(){
+  idx++;
+  if(idx>=QUESTIONS.length){ showFinal(); }
+  else { render(); window.scrollTo({top:0,behavior:'smooth'}); }
+}
+
+function showFinal(){
+  pfill.style.width='100%';
+  counter.textContent=`Concluído!`;
+  streakEl.classList.remove('show');
+  document.getElementById('quiz').classList.add('hidden');
+  const fs=document.getElementById('finalScreen');
+  fs.classList.remove('hidden');
+  const pct=Math.round((score/QUESTIONS.length)*100);
+  let medal,msg;
+  if(pct===100){medal='🏆';msg='Perfeito! Você dominou o capítulo!';}
+  else if(pct>=80){medal='🥇';msg='Excelente! Você manda muito bem.';}
+  else if(pct>=60){medal='🥈';msg='Bom trabalho! Já está afiado.';}
+  else if(pct>=40){medal='🥉';msg='Tá no caminho — revise e tente de novo!';}
+  else {medal='📚';msg='Bora revisar o resumo e voltar mais forte!';}
+  fs.innerHTML=`
+    <div class="medal">${medal}</div>
+    <h2>${msg}</h2>
+    <div class="pct">${pct}%</div>
+    <div class="score">Você acertou ${score} de ${QUESTIONS.length} questões</div>
+    <div class="stats">
+      <div class="stat"><div class="big">${score}/${QUESTIONS.length}</div><div class="lbl">Acertos</div></div>
+      <div class="stat"><div class="big">🔥 ${bestStreak}</div><div class="lbl">Maior sequência</div></div>
+      <div class="stat"><div class="big">${pct}%</div><div class="lbl">Aproveitamento</div></div>
+    </div>
+    <button class="restart" onclick="restart()">🔄 Refazer o quiz</button>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(pct>=70) confetti();
+}
+
+function restart(){
+  idx=0; score=0; streak=0; bestStreak=0;
+  document.getElementById('finalScreen').classList.add('hidden');
+  document.getElementById('quiz').classList.remove('hidden');
+  render();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function confetti(){
+  const colors=['#3B82F6','#7C5CFF','#00A86B','#FF8A3D','#E53935','#FFD93D'];
+  for(let i=0;i<120;i++){
+    const c=document.createElement('div');
+    c.className='confetti';
+    c.style.left=Math.random()*100+'vw';
+    c.style.background=colors[Math.floor(Math.random()*colors.length)];
+    c.style.transform=`rotate(${Math.random()*360}deg)`;
+    const dur=2.5+Math.random()*2, delay=Math.random()*1.5;
+    c.style.animation=`fall ${dur}s ${delay}s linear forwards`;
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),(dur+delay)*1000+200);
+  }
+}
+const style=document.createElement('style');
+style.textContent=`@keyframes fall{to{transform:translateY(105vh) rotate(720deg); opacity:.2;}}`;
+document.head.appendChild(style);
+
+render();
+</script>
+</body>
+</html>
