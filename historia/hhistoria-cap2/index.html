@@ -1,1 +1,409 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz — A Revolução Russa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#060610;
+    --bg-card:#0F0F1E;
+    --bg-card-2:#15152A;
+    --accent:#FF3B3B;
+    --accent-2:#FF7A45;
+    --accent-glow:rgba(255,59,59,.45);
+    --txt:#EDEDF5;
+    --txt-dim:#9A9AB5;
+    --ok:#00A86B;
+    --ok-glow:rgba(0,168,107,.5);
+    --err:#E53935;
+    --err-glow:rgba(229,57,53,.5);
+    --line:#26263F;
+    --font:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:var(--font); background:var(--bg); color:var(--txt);
+    min-height:100vh; line-height:1.55; overflow-x:hidden;
+    background-image:
+      radial-gradient(700px 380px at 110% -5%, rgba(255,59,59,.13), transparent 60%),
+      radial-gradient(600px 360px at -10% 8%, rgba(255,122,69,.10), transparent 55%);
+    background-attachment:fixed;
+  }
 
+  /* ===== Barra de progresso fixa ===== */
+  .progress-wrap{position:sticky; top:0; z-index:50; background:rgba(6,6,16,.85); backdrop-filter:blur(8px); padding:10px 16px 12px; border-bottom:1px solid var(--line);}
+  .progress-top{display:flex; justify-content:space-between; align-items:center; max-width:720px; margin:0 auto 8px; font-weight:800; font-size:.88rem;}
+  .progress-top .qcount{color:var(--txt-dim);}
+  .streak{display:flex; align-items:center; gap:5px; padding:4px 11px; border-radius:999px; font-weight:900;
+    background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#fff; opacity:0; transform:scale(.6);
+    transition:opacity .3s, transform .3s; box-shadow:0 0 18px var(--accent-glow);}
+  .streak.show{opacity:1; transform:scale(1);}
+  .streak.pulse{animation:pulse .45s ease;}
+  @keyframes pulse{0%{transform:scale(1);}40%{transform:scale(1.28);}100%{transform:scale(1);}}
+  .progress-bar{max-width:720px; margin:0 auto; height:9px; background:var(--bg-card-2); border-radius:999px; overflow:hidden;}
+  .progress-fill{height:100%; width:0%; border-radius:999px; background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    box-shadow:0 0 12px var(--accent-glow); transition:width .45s cubic-bezier(.22,1,.36,1);}
+
+  .wrap{max-width:720px; margin:0 auto; padding:26px 18px 90px;}
+
+  /* ===== Capa ===== */
+  .capa{text-align:center; padding:36px 22px 30px; background:linear-gradient(160deg,var(--bg-card),var(--bg-card-2));
+    border:1px solid var(--line); border-radius:24px; box-shadow:0 20px 60px -30px var(--accent-glow);}
+  .capa .flag{font-size:3rem; filter:drop-shadow(0 0 16px var(--accent-glow));}
+  .capa h1{font-size:2rem; font-weight:900; margin:8px 0 6px; letter-spacing:-.5px;
+    background:linear-gradient(90deg,#fff,#FFD3C4); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
+  .capa .tag{display:inline-block; font-weight:800; font-size:.8rem; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--accent-2); background:rgba(255,59,59,.12); border:1px solid rgba(255,59,59,.3); padding:5px 14px; border-radius:999px; margin-bottom:14px;}
+  .capa p{color:var(--txt-dim); font-weight:600; max-width:480px; margin:0 auto 22px;}
+  .capa .meta{display:flex; gap:18px; justify-content:center; flex-wrap:wrap; margin-bottom:26px; color:var(--txt-dim); font-weight:700; font-size:.9rem;}
+  .capa .meta span{display:flex; align-items:center; gap:6px;}
+
+  .btn{font-family:var(--font); cursor:pointer; border:none; font-weight:900; border-radius:14px; transition:transform .15s, box-shadow .25s, background .2s;}
+  .btn:active{transform:scale(.97);}
+  .btn-main{font-size:1.1rem; color:#fff; padding:16px 40px; background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    box-shadow:0 10px 30px -8px var(--accent-glow);}
+  .btn-main:hover{box-shadow:0 14px 40px -6px var(--accent-glow); transform:translateY(-2px);}
+
+  /* ===== Card de questão ===== */
+  .card{background:linear-gradient(160deg,var(--bg-card),var(--bg-card-2)); border:1px solid var(--line);
+    border-radius:22px; padding:26px 24px 28px; box-shadow:0 18px 50px -30px rgba(0,0,0,.9); animation:slideIn .4s ease;}
+  @keyframes slideIn{from{opacity:0; transform:translateY(18px);}to{opacity:1; transform:translateY(0);}}
+  .q-head{display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap;}
+  .q-num{font-weight:900; font-size:.82rem; color:var(--accent-2); background:rgba(255,59,59,.1); padding:4px 12px; border-radius:999px; border:1px solid rgba(255,59,59,.25);}
+  .q-diff{font-weight:800; font-size:.74rem; padding:3px 10px; border-radius:999px; text-transform:uppercase; letter-spacing:.05em;}
+  .d-facil{color:#34D399; background:rgba(52,211,153,.12);}
+  .d-medio{color:#FBBF24; background:rgba(251,191,36,.12);}
+  .d-dificil{color:#FB7185; background:rgba(251,113,133,.12);}
+  .q-text{font-size:1.2rem; font-weight:800; line-height:1.4; margin-bottom:20px;}
+
+  .opts{display:flex; flex-direction:column; gap:11px;}
+  .opt{display:flex; align-items:center; gap:13px; text-align:left; width:100%; padding:15px 16px; font-size:1rem; font-weight:700;
+    color:var(--txt); background:var(--bg-card-2); border:1.5px solid var(--line); border-radius:14px; cursor:pointer;
+    transition:border-color .2s, background .2s, transform .12s;}
+  .opt:hover:not(:disabled){border-color:var(--accent); box-shadow:0 0 0 3px rgba(255,59,59,.12);}
+  .opt:disabled{cursor:default;}
+  .opt .letter{flex:none; width:30px; height:30px; border-radius:9px; display:grid; place-items:center; font-weight:900;
+    background:var(--bg); border:1.5px solid var(--line); transition:all .2s;}
+  .opt .otext{flex:1;}
+  .opt .mark{flex:none; font-size:1.1rem; opacity:0; transition:opacity .2s;}
+  .opt.correct{background:rgba(0,168,107,.16); border-color:var(--ok); box-shadow:0 0 0 3px var(--ok-glow);}
+  .opt.correct .letter{background:var(--ok); border-color:var(--ok); color:#fff;}
+  .opt.correct .mark{opacity:1;}
+  .opt.wrong{background:rgba(229,57,53,.14); border-color:var(--err);}
+  .opt.wrong .letter{background:var(--err); border-color:var(--err); color:#fff;}
+  .opt.wrong .mark{opacity:1;}
+
+  .feedback{margin-top:18px; padding:16px 18px; border-radius:14px; font-weight:600; line-height:1.6; display:none; animation:slideIn .35s ease;}
+  .feedback.show{display:block;}
+  .feedback.ok{background:rgba(0,168,107,.1); border-left:5px solid var(--ok);}
+  .feedback.no{background:rgba(229,57,53,.1); border-left:5px solid var(--err);}
+  .feedback .ftitle{font-weight:900; margin-bottom:5px; display:flex; align-items:center; gap:7px;}
+  .feedback.ok .ftitle{color:#34D399;} .feedback.no .ftitle{color:#FB7185;}
+
+  .next-row{display:flex; justify-content:flex-end; margin-top:18px;}
+  .btn-next{font-size:1rem; color:#fff; padding:13px 30px; background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    box-shadow:0 8px 24px -8px var(--accent-glow); display:none;}
+  .btn-next.show{display:inline-block;}
+  .btn-next:hover{transform:translateY(-2px);}
+
+  /* ===== Tela final ===== */
+  .result{text-align:center; padding:40px 24px; background:linear-gradient(160deg,var(--bg-card),var(--bg-card-2));
+    border:1px solid var(--line); border-radius:24px; box-shadow:0 20px 60px -30px var(--accent-glow); animation:slideIn .5s ease;}
+  .result .medal{font-size:4.4rem; filter:drop-shadow(0 0 22px var(--accent-glow)); animation:pop .6s ease;}
+  @keyframes pop{0%{transform:scale(0) rotate(-20deg);}60%{transform:scale(1.2) rotate(8deg);}100%{transform:scale(1) rotate(0);}}
+  .result h2{font-size:1.7rem; font-weight:900; margin:10px 0 4px;}
+  .result .msg{color:var(--txt-dim); font-weight:700; margin-bottom:24px;}
+  .stats{display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-bottom:28px;}
+  .stat{background:var(--bg-card-2); border:1px solid var(--line); border-radius:16px; padding:18px 22px; min-width:120px;}
+  .stat .big{font-size:2rem; font-weight:900; background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
+  .stat .lbl{color:var(--txt-dim); font-weight:700; font-size:.82rem; margin-top:2px;}
+
+  /* confete */
+  .confetti{position:fixed; top:-20px; width:11px; height:11px; z-index:200; pointer-events:none; border-radius:2px;}
+
+  .footer-note{text-align:center; color:var(--txt-dim); font-weight:700; font-size:.82rem; margin-top:26px; opacity:.7;}
+
+  @media (max-width:520px){
+    .capa h1{font-size:1.6rem;} .q-text{font-size:1.08rem;} .result h2{font-size:1.4rem;}
+    .opt{font-size:.95rem;} .stat{padding:14px 18px; min-width:96px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-wrap" id="progressWrap" style="display:none;">
+  <div class="progress-top">
+    <span class="qcount" id="qCount">Questão 1 de 25</span>
+    <span class="streak" id="streakBadge">🔥 <span id="streakNum">0</span> seguidas</span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+</div>
+
+<div class="wrap" id="wrap">
+  <!-- CAPA -->
+  <section class="capa" id="capa">
+    <div class="flag">🚩</div>
+    <span class="tag">História • 9º ano</span>
+    <h1>A Revolução Russa</h1>
+    <p>Do czarismo à era Stalin: teste o que você aprendeu sobre a revolução que mudou o século XX.</p>
+    <div class="meta">
+      <span>📝 25 questões</span>
+      <span>⚡ Feedback imediato</span>
+      <span>🔥 Modo streak</span>
+    </div>
+    <button class="btn btn-main" onclick="startQuiz()">Começar quiz →</button>
+  </section>
+</div>
+
+<div class="footer-note" id="footerNote" style="display:none;">🚩 Saber Mais+ • Bons estudos!</div>
+
+<script>
+const QUESTIONS = [
+  { d:"facil", q:"O sistema político da Rússia czarista justificava o poder do czar com base em qual ideia?",
+    o:["Soberania popular","Direito divino","Voto universal","Constituição liberal","Separação dos três poderes"], c:1,
+    fb:"O czarismo era uma autocracia baseada no <b>direito divino</b> — a ideia de que o poder do czar vinha diretamente de Deus, apoiada pela Igreja Ortodoxa. Soberania popular, voto universal, constituição liberal e separação de poderes eram justamente o oposto do regime." },
+
+  { d:"facil", q:"No início do século XX, cerca de 85% da população russa vivia:",
+    o:["Nas grandes cidades industriais","No exterior, exilada","No campo, em condições difíceis","Em colônias na Ásia","Em comunidades autônomas e prósperas"], c:2,
+    fb:"A maioria esmagadora vivia <b>no campo</b>, em condições duras e, em geral, sem terra. A industrialização era recente e concentrava só parte da população nas cidades." },
+
+  { d:"medio", q:"A servidão foi abolida em 1861, mas os camponeses continuaram em má situação porque:",
+    o:["Foram proibidos de trabalhar","Permaneceram sem terra e explorados pelos grandes proprietários","Foram todos enviados à guerra","Tiveram que emigrar para a Europa","Receberam terras, mas recusaram cultivá-las"], c:1,
+    fb:"Mesmo \"livres\", os camponeses seguiram <b>sem terra e explorados pelos latifundiários</b>. A abolição foi tardia (atrasada em relação à Europa) e não resolveu a desigualdade no campo." },
+
+  { d:"medio", q:"Para Karl Marx, em O Capital, o conflito entre trabalhadores e capitalistas levaria a:",
+    o:["Uma aliança permanente entre as classes","A luta de classes e à revolução dos trabalhadores","O fortalecimento da monarquia","O fim de todo tipo de trabalho","A conciliação pacífica mediada pela Igreja"], c:1,
+    fb:"Para Marx, interesses opostos geram a <b>luta de classes</b>, que levaria os trabalhadores à revolução e à tomada dos meios de produção, rumo ao comunismo. (Marx era alemão e morreu em 1883 — inspirou, mas não viveu a revolução.)" },
+
+  { d:"medio", q:"Em 1903 o POSDR rachou. Os termos \"bolchevique\" e \"menchevique\" significam, respectivamente:",
+    o:["\"Esquerda\" e \"direita\"","\"Maioria\" e \"minoria\"","\"Cidade\" e \"campo\"","\"Operário\" e \"camponês\"","\"Radical\" e \"moderado\""], c:1,
+    fb:"<b>Bolchevique = maioria</b>; <b>menchevique = minoria</b>. Muita gente troca pelo som — dica: <b>B</b>olchevique = <b>B</b>astante (maioria)." },
+
+  { d:"medio", q:"Qual era a estratégia defendida pelos bolcheviques, liderados por Lenin?",
+    o:["Manter o czar com algumas reformas","Aliar-se à burguesia e passar primeiro pela fase capitalista","Derrubar o czarismo sem a burguesia e implantar o comunismo diretamente","Esperar uma revolução na Alemanha antes de agir","Negociar uma monarquia constitucional com o czar"], c:2,
+    fb:"Os bolcheviques queriam que operários e camponeses derrubassem o czar <b>sem a burguesia</b>, implantando o comunismo direto. A aliança com a burguesia e a etapa capitalista eram propostas dos <b>mencheviques</b> (Martov)." },
+
+  { d:"facil", q:"O episódio de 1905 em que soldados do czar atiraram contra uma manifestação pacífica ficou conhecido como:",
+    o:["Revolução de Outubro","Domingo Sangrento","Tratado de Brest-Litovsk","Grande Terror","Marcha sobre o Inverno"], c:1,
+    fb:"O <b>Domingo Sangrento</b> (1905) foi o massacre de manifestantes pacíficos que pediam melhorias ao czar. Ampliou a indignação popular e funcionou como um \"ensaio\" da revolução." },
+
+  { d:"medio", q:"Os \"soviets\", que surgiram em 1905, eram:",
+    o:["Tropas de elite do czar","Conselhos populares para organizar e decidir as ações dos trabalhadores","Bancos estatais","Jornais de propaganda","Tribunais religiosos ortodoxos"], c:1,
+    fb:"Soviets eram <b>conselhos populares</b> (de operários, depois também soldados e camponeses) que organizavam a luta. Voltariam com muito mais força em 1917." },
+
+  { d:"dificil", q:"Após o Domingo Sangrento, o czar criou um parlamento (a Duma), mas:",
+    o:["Entregou todo o poder a ele","Dissolveu-o quando foi criticado e retomou o poder absoluto em 1907","Transformou a Rússia em república","Convidou os bolcheviques para governar","Aboliu a monarquia voluntariamente"], c:1,
+    fb:"O czar só fingiu ceder: <b>dissolveu a Duma</b> diante das críticas, criou outra por voto censitário (só ricos votavam) e, em 1907, já tinha recuperado os poderes absolutistas." },
+
+  { d:"medio", q:"A participação da Rússia na Primeira Guerra Mundial foi decisiva para a revolução porque:",
+    o:["Trouxe vitórias que fortaleceram o czar","Agravou a fome, a miséria e o descontentamento popular","Uniu o povo em torno do imperador","Encerrou a industrialização do país","Trouxe grandes lucros aos camponeses"], c:1,
+    fb:"A guerra foi desastrosa: ~1,7 milhão de mortos, indústrias destruídas, fome e miséria. Esse caos foi o <b>estopim</b> que detonou as revoluções de 1917." },
+
+  { d:"dificil", q:"Por que as datas das revoluções russas às vezes confundem (a \"Revolução de Outubro\" cair em novembro, por exemplo)?",
+    o:["Porque havia dois governos ao mesmo tempo","Porque a Rússia usava o calendário juliano, 13 dias diferente do gregoriano","Porque os historiadores discordam dos fatos","Porque a revolução durou vários meses","Porque cada região russa tinha um calendário próprio"], c:1,
+    fb:"A Rússia czarista usava o <b>calendário juliano</b>, 13 dias atrasado em relação ao gregoriano (o nosso). Por isso a Revolução de Outubro (24/10 juliano) cai em 6/11 no nosso calendário." },
+
+  { d:"medio", q:"A Revolução de Fevereiro de 1917 resultou em:",
+    o:["A vitória imediata dos bolcheviques","A queda do czar Nicolau II e a formação de um Governo Provisório","A criação da URSS","A entrada da Rússia na guerra","A restauração do poder absoluto do czar"], c:1,
+    fb:"Em fevereiro de 1917 (revolução menchevique), o <b>czar foi derrubado</b> e instalou-se um Governo Provisório, liderado por Kerensky. Os bolcheviques só tomariam o poder em Outubro." },
+
+  { d:"medio", q:"Por que o Governo Provisório de Kerensky decepcionou a população?",
+    o:["Aboliu a propriedade privada rápido demais","Manteve a Rússia na guerra e não resolveu a fome nem a falta de terras","Devolveu o poder ao czar","Proibiu todos os partidos políticos","Confiscou as terras de todos os camponeses"], c:1,
+    fb:"Kerensky <b>manteve a Rússia na guerra</b>, os nobres seguiram com suas terras e a miséria persistiu. As mudanças foram só políticas (liberdade de imprensa, volta dos exilados) — o que abriu caminho para Outubro." },
+
+  { d:"facil", q:"Qual slogan resumiu a proposta dos bolcheviques de Lenin em 1917?",
+    o:["\"Liberdade, Igualdade, Fraternidade\"","\"Paz, terra e pão\"","\"Ordem e Progresso\"","\"Proletários, uni-vos\"","\"Deus, Pátria e Família\""], c:1,
+    fb:"<b>\"Paz, terra e pão\"</b> resumia o que o povo queria: fim da guerra, terra para os camponeses e comida. \"Liberdade, igualdade, fraternidade\" é da Revolução Francesa." },
+
+  { d:"medio", q:"Entre as primeiras medidas do governo de Lenin (Conselho dos Comissários do Povo) estava:",
+    o:["A devolução das terras aos nobres","A divisão de terras entre camponeses e a nacionalização dos bancos","A volta do czar ao poder","A privatização das indústrias","A manutenção da Rússia na Primeira Guerra"], c:1,
+    fb:"Lenin promoveu a <b>divisão de terras</b> (Decreto da Terra), nacionalizou bancos, colocou operários no controle das indústrias e iniciou campanhas de alfabetização e ampliação de direitos das mulheres." },
+
+  { d:"medio", q:"O Exército Vermelho, criado para defender a revolução, foi liderado por:",
+    o:["Kerensky","Stalin","Leon Trotski","Nicolau II","Julius Martov"], c:2,
+    fb:"O Exército Vermelho foi organizado e liderado por <b>Leon Trotski</b>, membro bolchevique que participou da revolução e venceria a guerra civil contra o Exército Branco." },
+
+  { d:"dificil", q:"Pelo Tratado de Brest-Litovsk (1918), a Rússia:",
+    o:["Conquistou novos territórios da Alemanha","Saiu da Primeira Guerra cedendo territórios e pagando indenização","Entrou na Primeira Guerra","Aliou-se aos Estados Unidos","Recebeu a Ucrânia como indenização de guerra"], c:1,
+    fb:"Em março de 1918, a Rússia <b>saiu da guerra</b> cedendo territórios (Ucrânia, Polônia, países bálticos etc.) e pagando 6 bilhões de marcos. Com a derrota alemã no fim de 1918, o tratado foi anulado." },
+
+  { d:"medio", q:"A greve das operárias têxteis em 8 de março de 1917, em Petrogrado, é considerada por muitos historiadores:",
+    o:["O fim da revolução","O estopim da Revolução de 1917","Uma derrota dos trabalhadores","Um evento sem importância","Uma comemoração organizada pelo czar"], c:1,
+    fb:"Cerca de 90 mil operárias foram às ruas pedindo pão e o fim da guerra. Esse protesto é apontado como o <b>estopim de 1917</b> — e está ligado às origens do Dia Internacional da Mulher." },
+
+  { d:"dificil", q:"Sobre os direitos das mulheres na Rússia revolucionária, é correto afirmar que:",
+    o:["Nunca mudaram em nada","Avançaram com os bolcheviques (voto, divórcio, creches), mas recuaram a partir dos anos 1930 com Stalin","Só pioraram com a revolução","Foram garantidos pelo czar","Permaneceram exatamente iguais durante todo o período soviético"], c:1,
+    fb:"Com os bolcheviques as mulheres ganharam voto, divórcio, creches e o Código da Família (1918). Mas a partir dos <b>anos 1930, com Stalin</b>, muitos avanços foram revertidos. Lembrar só da primeira parte é a pegadinha clássica." },
+
+  { d:"medio", q:"A guerra civil russa (1918–1921) opôs:",
+    o:["Bolcheviques (Exército Vermelho) e seus opositores (Exército Branco)","Rússia e Alemanha","Apenas mencheviques e czaristas","Camponeses contra operários","Rússia e Estados Unidos"], c:0,
+    fb:"A guerra civil opôs o <b>Exército Vermelho</b> (bolcheviques, de Trotski) ao <b>Exército Branco</b> (czaristas, aristocratas, burgueses e socialistas moderados, apoiados por potências europeias). Venceu o Vermelho, mas o país ficou arrasado." },
+
+  { d:"medio", q:"A \"guerra de imagens\" entre Exército Vermelho e Branco se conecta com a atualidade porque:",
+    o:["Usava apenas fotografias reais","Antecipava a lógica da desinformação e das fake news","Não tinha relação com política","Era feita só pela imprensa estrangeira","Proibia qualquer tipo de cartaz ou propaganda"], c:1,
+    fb:"Os dois lados produziam propaganda com versões exageradas, personagens maniqueístas e repetição até virar \"verdade\". É a <b>mesma lógica das fake news</b> de hoje — só mudou a velocidade." },
+
+  { d:"facil", q:"A União das Repúblicas Socialistas Soviéticas (URSS) foi fundada em:",
+    o:["1905","1917","1922","1953","1991"], c:2,
+    fb:"A <b>URSS foi fundada em 1922</b>, unindo a Rússia a vários territórios vizinhos do antigo império. O Partido Comunista havia sido criado em 1918. (1991 foi quando ela se dissolveu.)" },
+
+  { d:"dificil", q:"Após a morte de Lenin, em 1924, a disputa pela sucessão foi vencida por:",
+    o:["Trotski, o herói da guerra civil","Kerensky","Stalin, que controlava a máquina do Partido Comunista","Nicolau II","Julius Martov"], c:2,
+    fb:"Apesar do prestígio militar de Trotski, quem venceu foi <b>Stalin</b>, pelo domínio da estrutura interna do partido. Trotski foi expulso (1927) e assassinado no México (1940)." },
+
+  { d:"medio", q:"Os gulags, símbolo do \"Grande Terror\" stalinista, eram:",
+    o:["Escolas públicas","Campos de detenção e trabalho forçado","Fábricas modelo","Conselhos de operários","Hospitais militares"], c:1,
+    fb:"Os <b>gulags</b> eram campos de trabalho forçado, com jornadas extenuantes e condições brutais (até -50°C). Símbolo da repressão e das mortes em massa do período stalinista." },
+
+  { d:"dificil", q:"Sobre o balanço geral da Revolução Russa, é correto dizer que:",
+    o:["Trouxe avanços materiais (educação, saúde), mas no campo político trocou uma forma de dominação por outra","Não mudou nada na vida da população","Eliminou completamente as desigualdades sociais","Manteve o czar no poder até 1990","Tornou a Rússia uma democracia liberal já em 1924"], c:0,
+    fb:"Houve <b>avanço material</b> — a URSS virou potência mundial, com investimentos em educação e saúde. Mas o projeto de sociedade sem classes não se concretizou: saíram czar e burguesia, entraram o Partido Comunista e a burocracia. Achar que o ideal igualitário foi plenamente alcançado é a pegadinha." },
+];
+
+const LETTERS = ["A","B","C","D","E"];
+const DIFF_LABEL = { facil:"Fácil", medio:"Médio", dificil:"Difícil" };
+let idx=0, score=0, streak=0, bestStreak=0, answered=false;
+
+const wrap = document.getElementById('wrap');
+const footerNote = document.getElementById('footerNote');
+
+function startQuiz(){
+  idx=0; score=0; streak=0; bestStreak=0;
+  document.getElementById('progressWrap').style.display='block';
+  footerNote.style.display='block';
+  renderQuestion();
+}
+
+function renderQuestion(){
+  answered=false;
+  const item = QUESTIONS[idx];
+  updateProgress();
+
+  let html = `<section class="card">
+    <div class="q-head">
+      <span class="q-num">Questão ${idx+1}</span>
+      <span class="q-diff d-${item.d}">${DIFF_LABEL[item.d]}</span>
+    </div>
+    <div class="q-text">${item.q}</div>
+    <div class="opts" id="opts">`;
+  item.o.forEach((op,i)=>{
+    html += `<button class="opt" onclick="answer(${i})">
+      <span class="letter">${LETTERS[i]}</span>
+      <span class="otext">${op}</span>
+      <span class="mark"></span>
+    </button>`;
+  });
+  html += `</div>
+    <div class="feedback" id="feedback"><div class="ftitle" id="ftitle"></div><div id="fbody"></div></div>
+    <div class="next-row"><button class="btn btn-next" id="btnNext" onclick="nextQuestion()">${idx===QUESTIONS.length-1?'Ver resultado 🏁':'Próxima →'}</button></div>
+  </section>`;
+  wrap.innerHTML = html;
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function answer(choice){
+  if(answered) return;
+  answered=true;
+  const item = QUESTIONS[idx];
+  const opts = document.querySelectorAll('.opt');
+  opts.forEach((b,i)=>{
+    b.disabled=true;
+    if(i===item.c){ b.classList.add('correct'); b.querySelector('.mark').textContent='✅'; }
+    if(i===choice && choice!==item.c){ b.classList.add('wrong'); b.querySelector('.mark').textContent='❌'; }
+  });
+
+  const fb = document.getElementById('feedback');
+  const ftitle = document.getElementById('ftitle');
+  const fbody = document.getElementById('fbody');
+  if(choice===item.c){
+    score++; streak++; bestStreak=Math.max(bestStreak,streak);
+    fb.className='feedback ok show'; ftitle.textContent='✅ Acertou!';
+  } else {
+    streak=0;
+    fb.className='feedback no show'; ftitle.textContent='❌ Não foi dessa vez';
+  }
+  fbody.innerHTML = item.fb;
+  updateStreak();
+  document.getElementById('btnNext').classList.add('show');
+}
+
+function nextQuestion(){
+  idx++;
+  if(idx>=QUESTIONS.length){ showResult(); }
+  else { renderQuestion(); }
+}
+
+function updateProgress(){
+  document.getElementById('qCount').textContent = `Questão ${idx+1} de ${QUESTIONS.length}`;
+  const pct = (idx/QUESTIONS.length)*100;
+  document.getElementById('progressFill').style.width = pct+'%';
+}
+
+function updateStreak(){
+  const badge = document.getElementById('streakBadge');
+  const num = document.getElementById('streakNum');
+  if(streak>=2){
+    num.textContent = streak;
+    badge.classList.add('show');
+    badge.classList.remove('pulse'); void badge.offsetWidth; badge.classList.add('pulse');
+  } else {
+    badge.classList.remove('show');
+  }
+}
+
+function showResult(){
+  document.getElementById('progressFill').style.width='100%';
+  document.getElementById('qCount').textContent = `Concluído!`;
+  document.getElementById('streakBadge').classList.remove('show');
+  const total = QUESTIONS.length;
+  const pct = Math.round((score/total)*100);
+  let medal, msg;
+  if(pct===100){ medal='🏆'; msg='Perfeito! Você dominou a Revolução Russa.'; }
+  else if(pct>=80){ medal='🥇'; msg='Excelente! Você manda muito bem no tema.'; }
+  else if(pct>=60){ medal='🥈'; msg='Muito bom! Já tem uma base sólida.'; }
+  else if(pct>=40){ medal='🥉'; msg='No caminho! Revise os pontos que escaparam.'; }
+  else { medal='📚'; msg='Bora revisar o resumo e tentar de novo!'; }
+
+  wrap.innerHTML = `<section class="result">
+    <div class="medal">${medal}</div>
+    <h2>${pct}% de aproveitamento</h2>
+    <p class="msg">${msg}</p>
+    <div class="stats">
+      <div class="stat"><div class="big">${score}/${total}</div><div class="lbl">Acertos</div></div>
+      <div class="stat"><div class="big">${pct}%</div><div class="lbl">Aproveitamento</div></div>
+      <div class="stat"><div class="big">🔥 ${bestStreak}</div><div class="lbl">Maior sequência</div></div>
+    </div>
+    <button class="btn btn-main" onclick="startQuiz()">↻ Refazer quiz</button>
+  </section>`;
+  window.scrollTo({top:0, behavior:'smooth'});
+  if(pct>=70) fireConfetti();
+}
+
+function fireConfetti(){
+  const colors=['#FF3B3B','#FF7A45','#FFD3C4','#00A86B','#FBBF24','#ffffff'];
+  for(let i=0;i<120;i++){
+    const c=document.createElement('div');
+    c.className='confetti';
+    c.style.left=Math.random()*100+'vw';
+    c.style.background=colors[Math.floor(Math.random()*colors.length)];
+    c.style.transform=`rotate(${Math.random()*360}deg)`;
+    const dur=2.6+Math.random()*2.2;
+    c.style.transition=`top ${dur}s linear, opacity ${dur}s linear, left ${dur}s ease-in-out`;
+    document.body.appendChild(c);
+    requestAnimationFrame(()=>{
+      c.style.top=(100+Math.random()*15)+'vh';
+      c.style.left=(parseFloat(c.style.left)+(Math.random()*20-10))+'vw';
+      c.style.opacity='0';
+    });
+    setTimeout(()=>c.remove(), dur*1000+200);
+  }
+}
+</script>
+</body>
+</html>
