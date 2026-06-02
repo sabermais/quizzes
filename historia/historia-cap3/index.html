@@ -1,1 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz — A Primeira República no Brasil | Saber Mais+</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,700;0,800;0,900;1,700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#060610;--card2:#15162a;--accent:#0066FF;--accent2:#3d8bff;--txt:#eef0ff;--muted:#9aa0c4;--ok:#00A86B;--err:#E53935;--gold:#ffd24a;--border:#2a2c4d;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Nunito',system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;line-height:1.5;
+    background-image:radial-gradient(1200px 600px at 80% -10%, #0066ff22, transparent),radial-gradient(900px 500px at -10% 110%, #7b2fff1f, transparent);}
+  .wrap{max-width:760px;margin:0 auto;padding:18px 16px 60px}
+  header.top{text-align:center;padding:22px 0 10px}
+  .kicker{display:inline-block;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent2);border:1px solid var(--border);padding:4px 12px;border-radius:30px;margin-bottom:12px}
+  h1{font-size:1.55rem;font-weight:900;line-height:1.15}
+  h1 .glow{color:var(--accent2);text-shadow:0 0 18px #0066ff66}
+  .sub{color:var(--muted);font-size:.95rem;margin-top:6px}
+  .progress-row{display:flex;align-items:center;gap:12px;margin:20px 0 6px;position:sticky;top:0;background:linear-gradient(var(--bg),var(--bg) 70%,transparent);padding:10px 0;z-index:5}
+  .bar{flex:1;height:12px;background:#1b1d33;border-radius:20px;overflow:hidden;border:1px solid var(--border)}
+  .bar>i{display:block;height:100%;width:0;border-radius:20px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s ease}
+  .count{font-weight:800;font-size:.9rem;color:var(--muted);white-space:nowrap}
+  .streak{display:flex;align-items:center;gap:5px;font-weight:900;font-size:.95rem;color:var(--gold);opacity:0;transform:scale(.6);transition:.3s;white-space:nowrap}
+  .streak.on{opacity:1;transform:scale(1)}
+  .streak.pop{animation:pop .45s ease}
+  @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.45)}100%{transform:scale(1)}}
+  .card{background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:22px 20px;margin-top:14px;box-shadow:0 18px 40px #00000055}
+  .qtag{font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:20px;display:inline-block;margin-bottom:12px}
+  .t-medio{background:#ffb02e22;color:#ffcf7a;border:1px solid #ffb02e55}
+  .t-dificil{background:#e5393522;color:#ff8a87;border:1px solid #e5393555}
+  .qtext{font-size:1.16rem;font-weight:800;margin-bottom:16px}
+  .opts{display:flex;flex-direction:column;gap:10px}
+  .opt{display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%;background:#0f1020;border:1.5px solid var(--border);color:var(--txt);padding:14px 15px;border-radius:14px;font:inherit;font-weight:700;cursor:pointer;transition:.18s;line-height:1.35}
+  .opt .letter{flex:none;width:26px;height:26px;border-radius:8px;background:#1c1e38;display:grid;place-items:center;font-weight:900;font-size:.85rem;color:var(--accent2)}
+  .opt:hover:not(:disabled){border-color:var(--accent);box-shadow:0 0 0 3px #0066ff22}
+  .opt:disabled{cursor:default}
+  .opt.correct{background:var(--ok);border-color:var(--ok);color:#fff}
+  .opt.correct .letter{background:#ffffff33;color:#fff}
+  .opt.wrong{background:var(--err);border-color:var(--err);color:#fff}
+  .opt.wrong .letter{background:#ffffff33;color:#fff}
+  .opt .ic{margin-left:auto;font-weight:900}
+  .feedback{margin-top:14px;border-radius:14px;padding:14px 16px;font-size:.96rem;border-left:5px solid var(--accent);background:#0f1020;display:none}
+  .feedback.show{display:block;animation:fade .35s ease}
+  .feedback.good{border-left-color:var(--ok)}
+  .feedback.bad{border-left-color:var(--err)}
+  .feedback b{color:var(--accent2)}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .next{margin-top:16px;width:100%;padding:14px;border:none;border-radius:14px;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;font:inherit;font-weight:900;font-size:1.02rem;cursor:pointer;display:none;transition:.15s}
+  .next.show{display:block}
+  .next:hover{filter:brightness(1.1)}
+  .final{text-align:center;display:none}
+  .final.show{display:block;animation:fade .4s ease}
+  .medal{font-size:4.6rem;line-height:1;margin:6px 0 4px;animation:pop .6s ease}
+  .final h2{font-size:1.5rem;font-weight:900;margin-bottom:6px}
+  .scoreline{font-size:1.1rem;color:var(--muted);margin:4px 0}
+  .big{font-size:2.6rem;font-weight:900;color:var(--accent2);text-shadow:0 0 22px #0066ff55}
+  .stats{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:18px 0}
+  .stat{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:12px 18px;min-width:120px}
+  .stat .n{font-size:1.5rem;font-weight:900}
+  .stat .l{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .retry{margin-top:8px;padding:14px 26px;border:none;border-radius:14px;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;font:inherit;font-weight:900;font-size:1rem;cursor:pointer}
+  .retry:hover{filter:brightness(1.1)}
+  .foot{text-align:center;color:var(--muted);font-size:.8rem;margin-top:30px}
+  .confetti{position:fixed;top:-12px;width:10px;height:14px;border-radius:2px;z-index:50;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <span class="kicker">História • 9º ano • Quiz</span>
+    <h1>🏛️ A Primeira República <span class="glow">no Brasil</span></h1>
+    <p class="sub">Nem tão "pública" — 20 questões (A–E), níveis médio e difícil • gabarito embaralhado</p>
+  </header>
 
+  <div class="progress-row" id="progressRow">
+    <div class="bar"><i id="barFill"></i></div>
+    <span class="count" id="count">1 / 20</span>
+    <span class="streak" id="streak">🔥 <span id="streakN">0</span></span>
+  </div>
+
+  <div id="quizArea"></div>
+
+  <div class="final" id="final">
+    <div class="medal" id="medal">🏆</div>
+    <h2 id="finalTitle">Mandou bem!</h2>
+    <p class="scoreline">Seu aproveitamento</p>
+    <div class="big" id="pct">0%</div>
+    <div class="stats">
+      <div class="stat"><div class="n" id="fScore">0/20</div><div class="l">Acertos</div></div>
+      <div class="stat"><div class="n" id="fStreak">0</div><div class="l">🔥 Maior sequência</div></div>
+    </div>
+    <p class="scoreline" id="finalMsg"></p>
+    <button class="retry" onclick="restart()">🔄 Refazer o quiz</button>
+  </div>
+
+  <div class="foot">✅ Saber Mais+ • A Primeira República: cara de democracia, clube de poucos</div>
+</div>
+
+<script>
+// Cada questão: o[] = alternativas na ordem "natural"; a = índice da CORRETA nesse array.
+// As alternativas são EMBARALHADAS em tempo de execução a cada exibição (gabarito alternado).
+// Níveis: apenas "medio" e "dificil", intercalados.
+const QUESTIONS = [
+  {tag:"medio", q:"Qual é a sequência cronológica correta destes marcos da história do Brasil?",
+   o:["Independência (1822) → Abolição (1888) → Proclamação da República (1889) → 1ª Constituição republicana (1891)",
+      "Abolição (1888) → Independência (1822) → Proclamação (1889) → Constituição (1891)",
+      "Independência (1822) → Proclamação (1889) → Abolição (1888) → Constituição (1891)",
+      "Proclamação (1889) → Independência (1822) → Abolição (1888) → Constituição (1891)",
+      "Independência (1822) → Abolição (1888) → Constituição (1891) → Proclamação (1889)"], a:0,
+   f:"A ordem é Independência (1822), Abolição (1888), Proclamação (15/11/1889) e 1ª Constituição republicana (24/02/1891). As outras trocam a posição da abolição, da proclamação ou da Constituição."},
+
+  {tag:"dificil", q:"Sobre o caráter da Proclamação da República, é correto afirmar que:",
+   o:["foi um golpe de militares e elites, sem participação do povo",
+      "foi uma revolução popular, com ampla participação das massas",
+      "foi um plebiscito em que a população votou pelo fim da Monarquia",
+      "foi imposta por uma invasão estrangeira",
+      "resultou de uma guerra civil entre as províncias"], a:0,
+   f:"A República nasceu de um <b>golpe militar apoiado pelas elites</b>, num clima de crise — o povo apenas assistiu. Por isso falamos em \"quartelada\", não em revolução popular, plebiscito ou guerra civil."},
+
+  {tag:"medio", q:"O título do capítulo chama a Primeira República de 'nem tão pública'. Esse contraste se explica porque 'res publica' significa:",
+   o:["'coisa de todos' — mas, na prática, o poder ficou nas mãos de poucos",
+      "'governo dos militares' — e, de fato, só militares governaram",
+      "'poder do rei' — mantido igual ao Império",
+      "'terra sem lei' — pois não havia Constituição",
+      "'reino dos nobres' — que ganharam mais títulos"], a:0,
+   f:"<b>Res publica = 'coisa de todos'</b>. A ironia é que, apesar do nome, o regime foi controlado por uma minoria (oligarquias, militares e elites), com o povo de fora."},
+
+  {tag:"dificil", q:"Qual das opções NÃO foi um fator que enfraqueceu a Monarquia?",
+   o:["O apoio cada vez maior do povo ao imperador",
+      "Insatisfação da elite cafeeira com a lentidão do Império",
+      "Descontentamento dos militares após a Guerra do Paraguai",
+      "O avanço do movimento abolicionista",
+      "O ressentimento dos produtores de açúcar do Nordeste"], a:0,
+   f:"O que enfraqueceu a Monarquia foi a <b>insatisfação</b> de café, açúcar, abolicionismo e militares. Não houve \"apoio crescente do povo ao imperador\" — essa é a falsa."},
+
+  {tag:"medio", q:"O termo \"quartelada\", usado para descrever a Proclamação, significa:",
+   o:["revolução feita por militares para tomar o poder",
+      "eleição direta para presidente",
+      "acordo de paz entre províncias",
+      "revolta de pessoas escravizadas",
+      "assembleia de senadores"], a:0,
+   f:"<b>Quartelada</b> é um golpe/revolução feito por militares para tomar o poder — exatamente o 15 de novembro, somado às crises que a Monarquia não resolveu."},
+
+  {tag:"dificil", q:"De que forma a Guerra do Paraguai (1864–1870) contribuiu para a queda da Monarquia?",
+   o:["Fez os militares quererem mais participação política, sendo ignorados por dom Pedro II",
+      "Trouxe lucros que enriqueceram o imperador",
+      "Acabou com a escravidão no Brasil",
+      "Provocou a vinda dos primeiros imigrantes",
+      "Aumentou a popularidade da Monarquia"], a:0,
+   f:"A guerra foi cara e endividou o país; na volta, os <b>militares passaram a exigir mais espaço político</b> e, ignorados pelo imperador, aproximaram-se dos republicanos."},
+
+  {tag:"medio", q:"Quem comandou a marcha militar de 15 de novembro e chefiou o Governo Provisório?",
+   o:["Marechal Deodoro da Fonseca","Floriano Peixoto","Campos Sales","Pinheiro Machado","Prudente de Morais"], a:0,
+   f:"Foi o <b>marechal Deodoro da Fonseca</b>. Floriano foi o 2º presidente; Campos Sales criou a Política dos Governadores; Pinheiro Machado era senador influente; Prudente de Morais foi o 1º presidente civil (1894)."},
+
+  {tag:"dificil", q:"Sobre a bandeira republicana adotada em 1889, é correto dizer que:",
+   o:["foi uma adaptação da bandeira imperial, mantendo verde, amarelo e o losango",
+      "foi criada totalmente do zero, sem relação com o Império",
+      "copiou exatamente a bandeira dos Estados Unidos",
+      "aboliu as cores verde e amarela",
+      "foi desenhada pessoalmente por dom Pedro II"], a:0,
+   f:"A bandeira foi uma <b>adaptação</b> da imperial: manteve verde, amarelo e losango, trocando o brasão por um círculo azul com estrelas e o lema \"Ordem e Progresso\". \"Criada do zero\" é pegadinha."},
+
+  {tag:"medio", q:"O lema \"Ordem e Progresso\", da bandeira, está ligado a qual corrente de pensamento?",
+   o:["Ao positivismo de Auguste Comte","Ao socialismo de Karl Marx","Ao liberalismo de Adam Smith","Ao anarquismo","Ao iluminismo de Rousseau"], a:0,
+   f:"O lema vem do <b>positivismo</b> de Auguste Comte, que defendia organizar a sociedade pela ciência e dizia que só há progresso com ordem."},
+
+  {tag:"dificil", q:"Sobre o Hino nacional no novo regime, é correto afirmar que:",
+   o:["a melodia antiga (de 1822) foi mantida e apenas a letra foi trocada",
+      "a música vencedora do concurso virou o Hino nacional",
+      "o hino foi importado da França",
+      "foi proibido cantar qualquer hino",
+      "o hino imperial seguiu sem nenhuma mudança"], a:0,
+   f:"A música vencedora virou o <b>Hino da Proclamação</b>, NÃO o Hino nacional. O povo amava a melodia antiga, então mantiveram a música e trocaram a letra (a de Osório Duque Estrada, 1909)."},
+
+  {tag:"medio", q:"Por que Tiradentes foi escolhido como herói da República?",
+   o:["Por ter sido vítima/mártir executado pela Monarquia, virando símbolo da luta pela liberdade",
+      "Por ter sido um general vitorioso na Guerra do Paraguai",
+      "Por ter proclamado a República",
+      "Por ter sido o primeiro presidente",
+      "Por ter assinado a Lei Áurea"], a:0,
+   f:"Tiradentes foi <b>executado pela Monarquia portuguesa</b>; a República o transformou em mártir (imagem aproximada à de Cristo), símbolo da luta pela liberdade contra o antigo regime."},
+
+  {tag:"dificil", q:"Uma diferença central entre o Império e a República de 1891 é que:",
+   o:["na República, acabou o Poder Moderador e os 3 poderes passaram a ser independentes",
+      "na República, o presidente ganhou o Poder Moderador",
+      "na República, o imperador continuou com poder absoluto",
+      "na República, foi extinto o Poder Judiciário",
+      "na República, o Legislativo foi abolido"], a:0,
+   f:"A Constituição de 1891 <b>extinguiu o Poder Moderador</b> (que dava poder absoluto ao imperador) e tornou Executivo, Legislativo e Judiciário independentes."},
+
+  {tag:"medio", q:"A figura feminina (inspirada na \"Marianne\" francesa) foi adotada pelo novo regime para:",
+   o:["substituir a imagem do rei (dom Pedro II), inclusive nas moedas",
+      "representar a rainha de Portugal",
+      "homenagear uma presidente mulher",
+      "simbolizar a Igreja Católica",
+      "representar a independência dos Estados Unidos"], a:0,
+   f:"A alegoria feminina <b>substituiu a imagem do imperador</b>. Por isso o Brasil tirou a cara de dom Pedro II das moedas e colocou essa jovem representando a República."},
+
+  {tag:"dificil", q:"Sobre o direito de voto na Constituição de 1891, é correto afirmar que:",
+   o:["votavam apenas homens alfabetizados maiores de 21 anos, e o voto não era secreto",
+      "o voto era universal e secreto",
+      "mulheres já podiam votar livremente",
+      "todos os adultos, incluindo analfabetos, podiam votar",
+      "o voto era obrigatório para todos acima de 16 anos"], a:0,
+   f:"Só votavam <b>homens alfabetizados, maiores de 21 anos</b> — cerca de 10% da população — e o voto <b>não era secreto</b>. Ficavam de fora analfabetos (a maioria), mulheres, mendigos, soldados sem patente e religiosos."},
+
+  {tag:"medio", q:"O nome 'República dos Estados Unidos do Brasil' e a grande autonomia dada aos estados mostram que a Constituição de 1891 se inspirou em qual país?",
+   o:["Estados Unidos","França","Inglaterra","Portugal","Argentina"], a:0,
+   f:"A inspiração foi os <b>Estados Unidos</b>: o federalismo transformou as províncias em estados autônomos, e o próprio nome do país copiava o modelo norte-americano."},
+
+  {tag:"dificil", q:"Sobre a Política do Café com Leite, qual afirmação está CORRETA?",
+   o:["Significava o domínio de SP (café) e MG (leite), mas envolvia muita disputa e outros estados influentes",
+      "Era um revezamento automático e fixo entre paulistas e mineiros",
+      "Excluía totalmente São Paulo do poder",
+      "Foi criada pela Constituição de 1891",
+      "Garantia a alternância obrigatória com o Rio Grande do Sul"], a:0,
+   f:"SP e MG dominavam por serem os mais ricos, mas <b>NÃO era um revezamento automático</b>: havia disputas e negociações, com RS, RJ, BA e PE também influindo. \"Automático e fixo\" é a pegadinha mais comum."},
+
+  {tag:"medio", q:"O período de 1889 a 1894 é chamado de 'República da Espada' porque:",
+   o:["seus dois presidentes (Deodoro e Floriano) eram marechais do Exército",
+      "foi marcado por uma guerra contra a Argentina",
+      "a Constituição obrigava o presidente a ser militar",
+      "o Exército foi extinto nesse período",
+      "os cafeicultores assumiram o comando das Forças Armadas"], a:0,
+   f:"O apelido vem de seus dois primeiros presidentes serem <b>militares</b> (marechais Deodoro e Floriano). Não houve guerra com a Argentina nem exigência constitucional de presidente militar."},
+
+  {tag:"dificil", q:"A 'Comissão Verificadora de Poderes', dentro da Política dos Governadores, servia para:",
+   o:["barrar a posse de candidatos da oposição, mesmo eleitos (a 'degola')",
+      "contar os votos de forma secreta e independente",
+      "fiscalizar os gastos públicos do presidente",
+      "organizar o alistamento militar",
+      "definir o salário dos governadores"], a:0,
+   f:"A Comissão fazia a <b>'degola'</b>: invalidava os diplomas de eleitos da oposição, garantindo a posse só dos aliados do presidente. Era peça-chave para manter as oligarquias no poder."},
+
+  {tag:"medio", q:"A Política dos Governadores, criada por Campos Sales, consistia em:",
+   o:["uma troca de apoio entre o presidente e os governadores, garantindo eleições favoráveis a aliados",
+      "a divisão do país em monarquias regionais",
+      "a entrega do governo aos militares",
+      "o voto obrigatório e secreto para todos",
+      "a criação de partidos nacionais fortes e independentes"], a:0,
+   f:"Era uma <b>troca de favores</b>: o presidente apoiava os governadores e estes garantiam a vitória de candidatos aliados, sustentando o domínio das oligarquias."},
+
+  {tag:"dificil", q:"O Convênio de Taubaté (1906) é um exemplo de como o Estado:",
+   o:["usou dinheiro público (impostos e empréstimos) para comprar e estocar café, protegendo a elite cafeeira",
+      "investiu os impostos em escolas e saúde para o povo",
+      "proibiu a produção de café no Brasil",
+      "distribuiu terras para os trabalhadores rurais",
+      "financiou a industrialização do país"], a:0,
+   f:"No Convênio de Taubaté, o governo passou a <b>comprar e estocar o excedente de café</b> — com impostos de todos e empréstimos externos — para segurar o preço e <b>proteger o lucro da elite cafeeira</b>."}
+];
+
+let idx=0, score=0, streak=0, maxStreak=0, answered=false, order=[], correctDisplay=0;
+const quizArea=document.getElementById('quizArea');
+const barFill=document.getElementById('barFill');
+const countEl=document.getElementById('count');
+const streakEl=document.getElementById('streak');
+const streakN=document.getElementById('streakN');
+const L=['A','B','C','D','E'];
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function render(){
+  answered=false;
+  const item=QUESTIONS[idx];
+  // embaralha as alternativas em runtime e recalcula a posição da correta
+  order=shuffle([...Array(item.o.length).keys()]);
+  correctDisplay=order.indexOf(item.a);
+  const tagClass=item.tag==='dificil'?'t-dificil':'t-medio';
+  const tagTxt=item.tag==='dificil'?'Difícil':'Médio';
+  countEl.textContent=(idx+1)+' / '+QUESTIONS.length;
+  barFill.style.width=(idx/QUESTIONS.length*100)+'%';
+  let html='<div class="card"><span class="qtag '+tagClass+'">'+tagTxt+'</span>'
+         +'<div class="qtext">'+(idx+1)+'. '+item.q+'</div><div class="opts">';
+  order.forEach((orig,pos)=>{
+    html+='<button class="opt" onclick="choose('+pos+')"><span class="letter">'+L[pos]+'</span>'
+         +'<span>'+item.o[orig]+'</span><span class="ic"></span></button>';
+  });
+  html+='</div><div class="feedback" id="fb"></div>'
+      +'<button class="next" id="nextBtn" onclick="nextQ()">'+(idx===QUESTIONS.length-1?'Ver resultado →':'Próxima →')+'</button></div>';
+  quizArea.innerHTML=html;
+}
+
+function choose(pos){
+  if(answered) return;
+  answered=true;
+  const item=QUESTIONS[idx];
+  const btns=quizArea.querySelectorAll('.opt');
+  btns.forEach((b,j)=>{
+    b.disabled=true;
+    if(j===correctDisplay){b.classList.add('correct');b.querySelector('.ic').textContent='✅';}
+    if(j===pos && pos!==correctDisplay){b.classList.add('wrong');b.querySelector('.ic').textContent='❌';}
+  });
+  const fb=document.getElementById('fb');
+  const ok=(pos===correctDisplay);
+  if(ok){score++;streak++;maxStreak=Math.max(maxStreak,streak);fb.className='feedback good show';fb.innerHTML='✅ <b>Mandou bem!</b> '+item.f;}
+  else{streak=0;fb.className='feedback bad show';fb.innerHTML='❌ <b>Quase!</b> '+item.f;}
+  updateStreak();
+  document.getElementById('nextBtn').classList.add('show');
+}
+
+function updateStreak(){
+  if(streak>=2){streakN.textContent=streak;streakEl.classList.add('on');streakEl.classList.remove('pop');void streakEl.offsetWidth;streakEl.classList.add('pop');}
+  else{streakEl.classList.remove('on');}
+}
+
+function nextQ(){idx++;if(idx>=QUESTIONS.length){showFinal();return;}render();window.scrollTo({top:0,behavior:'smooth'});}
+
+function showFinal(){
+  document.getElementById('progressRow').style.display='none';
+  quizArea.innerHTML='';barFill.style.width='100%';
+  const pct=Math.round(score/QUESTIONS.length*100);
+  let medal='📚',title='Bora revisar!';
+  if(pct===100){medal='🏆';title='PERFEITO! Você é fera!';}
+  else if(pct>=80){medal='🥇';title='Excelente!';}
+  else if(pct>=60){medal='🥈';title='Muito bom!';}
+  else if(pct>=40){medal='🥉';title='No caminho certo!';}
+  document.getElementById('medal').textContent=medal;
+  document.getElementById('finalTitle').textContent=title;
+  document.getElementById('pct').textContent=pct+'%';
+  document.getElementById('fScore').textContent=score+'/'+QUESTIONS.length;
+  document.getElementById('fStreak').textContent=maxStreak;
+  const m={hi:'Você dominou a Primeira República! 🔥',mid:'Boa! Revê os pontos que escaparam e fixa de vez.',lo:'Releia o resumo Saber Mais+ e tente de novo — você vai longe! 💪'};
+  document.getElementById('finalMsg').textContent=pct>=70?m.hi:pct>=40?m.mid:m.lo;
+  document.getElementById('final').classList.add('show');
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(pct>=70) confetti();
+}
+
+function confetti(){
+  const colors=['#0066FF','#3d8bff','#ffd24a','#00A86B','#E53935','#7b2fff'];
+  for(let i=0;i<120;i++){
+    const c=document.createElement('div');c.className='confetti';
+    c.style.left=Math.random()*100+'vw';c.style.background=colors[i%colors.length];
+    c.style.transform='rotate('+(Math.random()*360)+'deg)';
+    const dur=2.5+Math.random()*2.5,delay=Math.random()*1.5;
+    c.style.animation='fall '+dur+'s linear '+delay+'s forwards';
+    document.body.appendChild(c);setTimeout(()=>c.remove(),(dur+delay)*1000+200);
+  }
+}
+const style=document.createElement('style');
+style.textContent='@keyframes fall{to{transform:translateY(105vh) rotate(720deg);opacity:.3}}';
+document.head.appendChild(style);
+
+function restart(){idx=0;score=0;streak=0;maxStreak=0;document.getElementById('final').classList.remove('show');document.getElementById('progressRow').style.display='flex';streakEl.classList.remove('on');render();window.scrollTo({top:0,behavior:'smooth'});}
+
+render();
+</script>
+</body>
+</html>
