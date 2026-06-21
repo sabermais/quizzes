@@ -1,1 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEMPLATE — Quiz Saber Mais</title>
+<!--
+  TEMPLATE DO QUIZ — padrão Saber Mais (dark neon).
+  Para gerar um quiz: copie este arquivo, troque APENAS:
+    1) o título/série no cabeçalho (.tag e <h1>)
+    2) o array QUESTIONS (as perguntas)
+  NÃO reescreva o motor (render/choose/streak/final/confete) nem o CSS — já estão prontos.
 
+  REGRAS DAS QUESTÕES (ver SKILL.md):
+   - 5 alternativas por questão; campo `c` = índice da CORRETA no array `o` (0..4)
+   - nível alternando entre médio e difícil; marque as difíceis com lvl:"AVANÇADA"
+   - feedback (`fb`) explicativo, SEM citar a posição das alternativas
+   - as alternativas são EMBARALHADAS em runtime: a correta cai em letras diferentes
+     a cada questão e a cada tentativa (o acerto é checado pelo índice original via data-i)
+  Entregar como index.html. Fontes do sistema, zero dependências externas.
+-->
+<style>
+  :root{
+    --bg:#060610; --card:#0E0E1F; --card2:#15152B;
+    --accent:#3B82F6; --accent2:#7C5CFF;
+    --ok:#00A86B; --err:#E53935;
+    --txt:#EAEAF5; --muted:#9A9AB5; --border:#262642;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:var(--sans); background:
+      radial-gradient(900px 500px at 110% -5%, rgba(124,92,255,.18), transparent 60%),
+      radial-gradient(800px 500px at -10% 0%, rgba(59,130,246,.16), transparent 55%), var(--bg);
+    color:var(--txt); min-height:100vh; line-height:1.55; -webkit-font-smoothing:antialiased; padding:0 0 60px;}
+  .wrap{max-width:720px; margin:0 auto; padding:20px 18px;}
+  .progress-shell{position:sticky; top:0; z-index:20; background:rgba(6,6,16,.85); backdrop-filter:blur(8px); padding:12px 0 10px;}
+  .progress-track{height:10px; background:#1B1B33; border-radius:999px; overflow:hidden; box-shadow:inset 0 0 0 1px var(--border);}
+  .progress-fill{height:100%; width:0%; border-radius:999px; background:linear-gradient(90deg,var(--accent),var(--accent2)); transition:width .4s cubic-bezier(.4,0,.2,1); box-shadow:0 0 12px rgba(124,92,255,.7);}
+  .meta{display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:.9rem; color:var(--muted); font-weight:700;}
+  .streak{display:flex; align-items:center; gap:6px; opacity:0; transform:scale(.6); transition:.3s; color:#FF8A3D;}
+  .streak.show{opacity:1; transform:scale(1);}
+  .streak.pop{animation:pop .4s;}
+  @keyframes pop{0%{transform:scale(1);}50%{transform:scale(1.35);}100%{transform:scale(1);}}
+  .head{text-align:center; padding:26px 10px 10px;}
+  .head .tag{display:inline-block; font-size:.74rem; letter-spacing:.16em; text-transform:uppercase; font-weight:800; color:#fff; background:linear-gradient(90deg,var(--accent),var(--accent2)); padding:5px 14px; border-radius:999px; margin-bottom:14px;}
+  .head h1{font-size:1.7rem; font-weight:900; letter-spacing:-.5px; line-height:1.15;}
+  .head p{color:var(--muted); margin-top:8px; font-weight:600;}
+  .card{background:linear-gradient(180deg,var(--card),var(--card2)); border:1px solid var(--border); border-radius:20px; padding:24px 22px; margin-top:18px; box-shadow:0 20px 50px -24px rgba(0,0,0,.8);}
+  .qnum{font-size:.82rem; font-weight:800; color:var(--accent); letter-spacing:.04em; text-transform:uppercase;}
+  .lvl{display:inline-block; background:rgba(229,57,53,.18); color:#FF6B68; border:1px solid rgba(229,57,53,.5); font-size:.64rem; padding:2px 9px; border-radius:999px; margin-left:7px; letter-spacing:.08em; vertical-align:middle;}
+  .qtext{font-size:1.18rem; font-weight:800; margin:8px 0 18px; line-height:1.4;}
+  .opt{display:flex; align-items:flex-start; gap:12px; width:100%; text-align:left; cursor:pointer; background:#10101F; border:1.5px solid var(--border); color:var(--txt); border-radius:14px; padding:14px 16px; margin:10px 0; font-size:1rem; font-weight:600; font-family:inherit; transition:.18s;}
+  .opt:hover:not(:disabled){border-color:var(--accent); box-shadow:0 0 0 3px rgba(59,130,246,.15); transform:translateY(-1px);}
+  .opt .letter{flex:none; width:28px; height:28px; border-radius:8px; background:#1E1E3A; color:var(--accent); display:grid; place-items:center; font-weight:900; font-size:.9rem; transition:.18s;}
+  .opt .mark{margin-left:auto; font-size:1.1rem; opacity:0;}
+  .opt.correct{background:rgba(0,168,107,.16); border-color:var(--ok);}
+  .opt.correct .letter{background:var(--ok); color:#fff;} .opt.correct .mark{opacity:1;}
+  .opt.wrong{background:rgba(229,57,53,.14); border-color:var(--err);}
+  .opt.wrong .letter{background:var(--err); color:#fff;} .opt.wrong .mark{opacity:1;}
+  .opt:disabled{cursor:default;}
+  .fb{margin-top:16px; border-radius:14px; padding:16px 18px; font-size:.98rem; display:none; border-left:5px solid;}
+  .fb.show{display:block; animation:fade .35s;}
+  .fb.ok{background:rgba(0,168,107,.10); border-color:var(--ok);}
+  .fb.no{background:rgba(229,57,53,.10); border-color:var(--err);}
+  .fb .fbtitle{font-weight:900; margin-bottom:5px; display:flex; align-items:center; gap:7px;}
+  .fb.ok .fbtitle{color:#3DDC97;} .fb.no .fbtitle{color:#FF6B68;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);}to{opacity:1; transform:none;}}
+  .next{margin-top:18px; width:100%; padding:15px; border:0; border-radius:14px; cursor:pointer; font-family:inherit; font-size:1.05rem; font-weight:800; color:#fff; background:linear-gradient(90deg,var(--accent),var(--accent2)); box-shadow:0 10px 26px -10px rgba(124,92,255,.7); display:none; transition:.18s;}
+  .next:hover{transform:translateY(-2px);} .next.show{display:block;}
+  .final{text-align:center; padding:36px 22px;}
+  .final .medal{font-size:5rem; animation:pop .6s;}
+  .final h2{font-size:1.8rem; font-weight:900; margin:6px 0;}
+  .final .score{font-size:1.1rem; color:var(--muted); font-weight:700;}
+  .final .pct{font-size:3.2rem; font-weight:900; background:linear-gradient(90deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; margin:10px 0;}
+  .final .stats{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin:18px 0 26px;}
+  .final .stat{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 20px; min-width:120px;}
+  .final .stat .big{font-size:1.6rem; font-weight:900;} .final .stat .lbl{font-size:.78rem; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.05em;}
+  .restart{padding:14px 28px; border:0; border-radius:14px; cursor:pointer; font-family:inherit; font-size:1.05rem; font-weight:800; color:#fff; background:linear-gradient(90deg,var(--accent),var(--accent2)); box-shadow:0 10px 26px -10px rgba(124,92,255,.7);}
+  .restart:hover{transform:translateY(-2px);}
+  .confetti{position:fixed; top:-12px; width:10px; height:14px; z-index:50; pointer-events:none; border-radius:2px;}
+  .hidden{display:none;}
+  @media(max-width:480px){ .head h1{font-size:1.4rem;} .qtext{font-size:1.08rem;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="progress-shell">
+    <div class="progress-track"><div class="progress-fill" id="pfill"></div></div>
+    <div class="meta">
+      <span id="counter"></span>
+      <span class="streak" id="streak">🔥 <span id="streakn">0</span> seguidas</span>
+    </div>
+  </div>
+  <div id="quiz">
+    <div class="head">
+      <!-- TROCAR: matéria/série e título do capítulo -->
+      <span class="tag">Química • 9º ano</span>
+      <h1>⚛️ Estrutura Atômica: a Eletrosfera</h1>
+      <p id="intro"></p>
+    </div>
+    <div id="cardArea"></div>
+  </div>
+  <div id="finalScreen" class="final hidden"></div>
+</div>
+
+<script>
+/* ===== TROCAR APENAS ESTE ARRAY =====
+   Cada questão: q (enunciado, aceita HTML), o (5 alternativas), c (índice 0..4 da correta),
+   fb (explicação, sem citar posição), lvl opcional ("AVANÇADA") para as difíceis. */
+const QUESTIONS = [
+ {q:"Em um átomo, onde ficam os elétrons?",
+  o:["Na eletrosfera, organizados em camadas ao redor do núcleo","No núcleo, junto com os prótons","No núcleo, junto com os nêutrons","Espalhados aleatoriamente por todo o átomo","Apenas na camada K, em qualquer átomo"],c:0,
+  fb:"Os elétrons ficam na eletrosfera, a região ao redor do núcleo, organizados em camadas. Prótons e nêutrons é que ficam no núcleo."},
+
+ {q:"Qual é o número máximo de elétrons que a camada K pode conter?",
+  o:["8","18","2","32","1"],c:2,
+  fb:"A camada K é a primeira (mais próxima do núcleo) e comporta no máximo 2 elétrons. A sequência completa é 2, 8, 18, 32, 32, 18, 8."},
+
+ {q:"Em um átomo neutro, o número de elétrons é igual a quê?",
+  o:["Ao número atômico (Z), que é o número de prótons","Ao número de massa (A)","Ao número de nêutrons","À soma de prótons e nêutrons","À metade do número de massa"],c:0,
+  fb:"Em um átomo neutro as cargas se equilibram: número de elétrons = número de prótons = número atômico (Z)."},
+
+ {q:"Qual é a distribuição eletrônica correta do oxigênio (Z = 8)?",
+  o:["K=8","K=2, L=6","K=6, L=2","K=2, L=8","K=2, L=4, M=2"],c:1,
+  fb:"O oxigênio tem 8 elétrons: 2 na camada K (o máximo dela) e os 6 restantes na L. Logo, K=2, L=6."},
+
+ {q:"Por que o potássio (Z = 19) tem distribuição K=2, L=8, M=8, N=1, e não K=2, L=8, M=9?",lvl:"AVANÇADA",
+  o:["Porque a última camada preenchida não pode ter mais de 8 elétrons","Porque a camada M comporta no máximo 8 elétrons no total","Porque a camada M não existe no potássio","Porque a penúltima camada não pode ter mais de 8 elétrons","Porque o potássio tem poucos elétrons"],c:0,
+  fb:"A camada M comporta até 18, mas se fosse a última camada só poderia ter 8 (Regra 2). Por isso ela fica com 8 e o elétron restante vai para a camada N."},
+
+ {q:"O que é a camada de valência de um átomo?",
+  o:["A camada com o maior número de elétrons","A camada mais próxima do núcleo","A camada K, em qualquer átomo","A camada mais externa, ou seja, a última que tem elétrons","A camada que tem exatamente 8 elétrons"],c:3,
+  fb:"A camada de valência é a mais externa (a última ocupada por elétrons), tenha ela muitos ou poucos elétrons. É ela que define o comportamento químico do elemento."},
+
+ {q:"Um elemento tem distribuição K=2, L=8, M=3. Quantos elétrons ele tem na camada de valência?",
+  o:["2","8","3","13","11"],c:2,
+  fb:"A camada de valência é a mais externa — aqui é a M, com 3 elétrons. (Esse elemento é o alumínio, Z=13.)"},
+
+ {q:"O nitrogênio (2, 5) e o fósforo (2, 8, 5) tendem a ter propriedades químicas semelhantes. Por quê?",lvl:"AVANÇADA",
+  o:["Porque têm o mesmo número de elétrons na camada de valência","Porque têm o mesmo número total de elétrons","Porque têm o mesmo número de camadas","Porque ambos são gases nobres","Porque têm o mesmo número de nêutrons"],c:0,
+  fb:"Elementos com o mesmo número de elétrons na camada de valência têm propriedades parecidas. Nitrogênio e fósforo têm ambos 5 elétrons na valência."},
+
+ {q:"Segundo as regras de distribuição, qual é o número máximo de elétrons na penúltima camada preenchida?",
+  o:["8","18","32","2","Não há limite"],c:1,
+  fb:"Regra 3: a penúltima camada preenchida não pode ter mais de 18 elétrons. (Já a última não pode passar de 8.)"},
+
+ {q:"No estanho (Z = 50), a camada N fica com 18 elétrons em vez de 32. Qual regra explica isso?",lvl:"AVANÇADA",
+  o:["A penúltima camada não pode ter mais de 18 elétrons","A última camada não pode ter mais de 8 elétrons","A camada N nunca passa de 18 em nenhum átomo","Os elétrons preferem ficar na camada M","A camada N comporta no máximo 18 elétrons"],c:0,
+  fb:"A camada N comporta até 32, mas no estanho ela será a penúltima camada — e a penúltima não pode passar de 18 (Regra 3). Por isso N=18 e sobram 4 para a O."},
+
+ {q:"O potássio tem distribuição K=2, L=8, M=8, N=1. Qual é a camada de valência e quantos elétrons ela tem?",
+  o:["Camada M, com 8 elétrons","Camada K, com 2 elétrons","Camada L, com 8 elétrons","Camada N, com 8 elétrons","Camada N, com 1 elétron"],c:4,
+  fb:"A valência é a camada mais externa = N, com apenas 1 elétron. Cuidado: não é a camada com mais elétrons, e sim a mais externa."},
+
+ {q:"Qual afirmação está CORRETA sobre onde ficam as partículas do átomo?",
+  o:["Prótons e nêutrons ficam no núcleo; os elétrons, na eletrosfera","Prótons e elétrons ficam no núcleo; os nêutrons, na eletrosfera","Todas as partículas ficam no núcleo","Os elétrons ficam no núcleo e os prótons na eletrosfera","Nêutrons e elétrons ficam no núcleo"],c:0,
+  fb:"No núcleo ficam prótons e nêutrons. Na eletrosfera ficam os elétrons, girando em camadas."},
+
+ {q:"O arsênio (Z = 33) tem distribuição 2, 8, 18, 5. Considerando as valências carbono=4, hidrogênio=1, oxigênio=6, enxofre=6 e fósforo=5, de qual elemento o arsênio tem propriedades mais parecidas?",lvl:"AVANÇADA",
+  o:["Carbono","Hidrogênio","Fósforo","Oxigênio","Enxofre"],c:2,
+  fb:"O arsênio tem 5 elétrons na camada de valência, igual ao fósforo (valência 5). Por isso teriam comportamento químico parecido — foi essa a hipótese da bactéria que usaria arsênio no lugar do fósforo."},
+
+ {q:"Qual é a distribuição eletrônica do cloro (Cℓ, Z = 17)?",
+  o:["K=2, L=8, M=7","K=2, L=8, M=8","K=2, L=7, M=8","K=8, L=8, M=1","K=2, L=15"],c:0,
+  fb:"O cloro tem 17 elétrons: K=2, L=8 e os 7 restantes na M. Logo, K=2, L=8, M=7 (valência 7)."},
+
+ {q:"Um elemento X tem distribuição K=2, L=8, M=18, N=32, O=18, P=4 e 125 nêutrons. Quais são o número atômico (Z) e o número de massa (A)?",lvl:"AVANÇADA",
+  o:["Z = 82 e A = 82","Z = 82 e A = 207","Z = 84 e A = 209","Z = 125 e A = 207","Z = 207 e A = 82"],c:1,
+  fb:"Somando os elétrons: 2+8+18+32+18+4 = 82, então Z = 82. O número de massa é A = prótons + nêutrons = 82 + 125 = 207."},
+
+ {q:"Na areia (SiO₂), o silício tem distribuição 2, 8, 4. Quantos elétrons o silício tem na camada de valência?",
+  o:["8","14","2","4","6"],c:3,
+  fb:"A camada de valência do silício é a M, com 4 elétrons. (Já o oxigênio, 2, 6, tem valência 6.)"},
+
+ {q:"O carbono (Z = 6 → 2, 4) e o silício (2, 8, 4) costumam fazer ligações de modo parecido. O que eles têm em comum que explica isso?",lvl:"AVANÇADA",
+  o:["Ambos têm 4 elétrons na camada de valência","Ambos têm o mesmo número de camadas","Ambos têm o mesmo número de prótons","Ambos têm 4 camadas eletrônicas","Ambos são metais"],c:0,
+  fb:"Carbono e silício têm ambos 4 elétrons na camada de valência, por isso se comportam de forma parecida nas ligações — mesmo tendo números de camadas diferentes."},
+
+ {q:"Qual sequência representa corretamente o número máximo de elétrons das camadas K, L, M, N, O, P, Q?",
+  o:["2, 8, 18, 32, 32, 18, 8","2, 8, 18, 18, 32, 8, 2","8, 8, 18, 32, 18, 8, 2","2, 8, 8, 18, 18, 32, 32","2, 10, 18, 36, 32, 18, 8"],c:0,
+  fb:"A sequência é 2, 8, 18, 32, 32, 18, 8 — simétrica (sobe e desce), o que ajuda na memorização."},
+
+ {q:"Pela Regra 1 da distribuição eletrônica, por qual camada devemos começar a preencher os elétrons?",
+  o:["Pela camada de valência","Pela camada K (a mais próxima do núcleo)","Pela camada Q (a mais externa)","Pela camada com mais espaço livre (M ou N)","Por qualquer camada, tanto faz"],c:1,
+  fb:"Regra 1: começamos sempre pela camada K (a mais próxima do núcleo). Quando ela enche, passamos para a seguinte, e assim por diante."},
+
+ {q:"Qual é a distribuição eletrônica do flúor (F, Z = 9)?",
+  o:["K=2, L=8","K=2, L=7","K=9","K=7, L=2","K=2, L=6, M=1"],c:1,
+  fb:"O flúor tem 9 elétrons: K=2 e os 7 restantes na L. Logo, K=2, L=7 (valência 7)."},
+
+ {q:"Qual é a distribuição eletrônica do selênio (Se, Z = 34)?",lvl:"AVANÇADA",
+  o:["K=2, L=8, M=18, N=6","K=2, L=8, M=24","K=2, L=8, M=18, N=4, O=2","K=2, L=8, M=16, N=8","K=2, L=8, M=8, N=16"],c:0,
+  fb:"Selênio tem 34 elétrons: K=2, L=8, M=18 (somam 28) e sobram 6 para a N. Como a N é a última camada e 6 ≤ 8, fica N=6. Resultado: 2, 8, 18, 6 (valência 6)."},
+
+ {q:"Um átomo apresenta a distribuição 2, 8, 2. Sabendo que Na=11, Mg=12, K=19, Ca=20 e Mn=25, qual é esse elemento?",
+  o:["Sódio (Na)","Potássio (K)","Magnésio (Mg)","Cálcio (Ca)","Manganês (Mn)"],c:2,
+  fb:"A soma dos elétrons é 2 + 8 + 2 = 12, que corresponde ao número atômico do magnésio (Mg)."},
+
+ {q:"O cálcio (Ca, Z = 20) tem distribuição 2, 8, 8, 2. Quantos elétrons ele tem na camada de valência?",
+  o:["8","2","20","4","18"],c:1,
+  fb:"A camada de valência é a mais externa — aqui é a quarta camada (N), com 2 elétrons. Não confunda com a camada que tem mais elétrons."},
+
+ {q:"Entre boro (2, 3), nitrogênio (2, 5), fósforo (2, 8, 5) e bromo (2, 8, 18, 7), quais dois têm propriedades químicas semelhantes?",lvl:"AVANÇADA",
+  o:["Boro e nitrogênio","Nitrogênio e fósforo","Fósforo e bromo","Boro e bromo","Boro e fósforo"],c:1,
+  fb:"Propriedades semelhantes vêm do mesmo número de elétrons na camada de valência. Nitrogênio e fósforo têm ambos 5 elétrons na valência; o boro tem 3 e o bromo tem 7."},
+
+ {q:"A areia é formada por silício (SiO₂). Qual elemento aparece em maior número de átomos na areia?",
+  o:["Silício","Oxigênio","Os dois em igual quantidade","Carbono","Hidrogênio"],c:1,
+  fb:"Na fórmula SiO₂ há 2 átomos de oxigênio para cada 1 de silício. Por isso o oxigênio aparece em maior número de átomos."}
+];
+/* ===================================== */
+
+let idx=0, score=0, streak=0, bestStreak=0, answered=false;
+const cardArea=document.getElementById('cardArea');
+const pfill=document.getElementById('pfill');
+const counter=document.getElementById('counter');
+const streakEl=document.getElementById('streak');
+const streakN=document.getElementById('streakn');
+document.getElementById('intro').textContent=`${QUESTIONS.length} questões • escolha a alternativa correta e veja a explicação`;
+
+function shuffled(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function render(){
+  answered=false;
+  const item=QUESTIONS[idx];
+  counter.textContent=`Questão ${idx+1} de ${QUESTIONS.length}`;
+  pfill.style.width=`${(idx/QUESTIONS.length)*100}%`;
+  const letters=['A','B','C','D','E'];
+  const order=shuffled(item.o.map((_,i)=>i));   // embaralha as alternativas existentes
+  const opts=order.map((orig,pos)=>`
+    <button class="opt" data-i="${orig}" onclick="choose(${orig})">
+      <span class="letter">${letters[pos]}</span>
+      <span class="otext">${item.o[orig]}</span>
+      <span class="mark"></span>
+    </button>`).join('');
+  cardArea.innerHTML=`
+    <div class="card">
+      <div class="qnum">Questão ${idx+1}${item.lvl?` <span class="lvl">🔴 ${item.lvl}</span>`:''}</div>
+      <div class="qtext">${item.q}</div>
+      <div id="opts">${opts}</div>
+      <div class="fb" id="fb"></div>
+      <button class="next" id="next" onclick="nextQ()">${idx===QUESTIONS.length-1?'Ver resultado 🏁':'Próxima →'}</button>
+    </div>`;
+}
+
+function choose(i){
+  if(answered) return; answered=true;
+  const item=QUESTIONS[idx];
+  document.querySelectorAll('.opt').forEach(b=>{
+    const bi=+b.dataset.i; b.disabled=true;
+    if(bi===item.c){ b.classList.add('correct'); b.querySelector('.mark').textContent='✅'; }
+    if(bi===i && i!==item.c){ b.classList.add('wrong'); b.querySelector('.mark').textContent='❌'; }
+  });
+  const fb=document.getElementById('fb');
+  if(i===item.c){
+    score++; streak++; bestStreak=Math.max(bestStreak,streak);
+    fb.className='fb ok show'; fb.innerHTML=`<div class="fbtitle">✅ Acertou!</div>${item.fb}`;
+  } else {
+    streak=0;
+    fb.className='fb no show'; fb.innerHTML=`<div class="fbtitle">❌ Não foi dessa vez</div>${item.fb}`;
+  }
+  updateStreak();
+  document.getElementById('next').classList.add('show');
+}
+
+function updateStreak(){
+  if(streak>=2){ streakN.textContent=streak; streakEl.classList.add('show');
+    streakEl.classList.remove('pop'); void streakEl.offsetWidth; streakEl.classList.add('pop'); }
+  else streakEl.classList.remove('show');
+}
+
+function nextQ(){ idx++; if(idx>=QUESTIONS.length) showFinal(); else { render(); window.scrollTo({top:0,behavior:'smooth'}); } }
+
+function showFinal(){
+  pfill.style.width='100%'; counter.textContent='Concluído!'; streakEl.classList.remove('show');
+  document.getElementById('quiz').classList.add('hidden');
+  const fs=document.getElementById('finalScreen'); fs.classList.remove('hidden');
+  const pct=Math.round((score/QUESTIONS.length)*100);
+  let medal,msg;
+  if(pct===100){medal='🏆';msg='Perfeito! Você dominou o capítulo!';}
+  else if(pct>=80){medal='🥇';msg='Excelente! Você manda muito bem.';}
+  else if(pct>=60){medal='🥈';msg='Bom trabalho! Já está afiado.';}
+  else if(pct>=40){medal='🥉';msg='Tá no caminho — revise e tente de novo!';}
+  else {medal='📚';msg='Bora revisar o resumo e voltar mais forte!';}
+  fs.innerHTML=`
+    <div class="medal">${medal}</div>
+    <h2>${msg}</h2>
+    <div class="pct">${pct}%</div>
+    <div class="score">Você acertou ${score} de ${QUESTIONS.length} questões</div>
+    <div class="stats">
+      <div class="stat"><div class="big">${score}/${QUESTIONS.length}</div><div class="lbl">Acertos</div></div>
+      <div class="stat"><div class="big">🔥 ${bestStreak}</div><div class="lbl">Maior sequência</div></div>
+      <div class="stat"><div class="big">${pct}%</div><div class="lbl">Aproveitamento</div></div>
+    </div>
+    <button class="restart" onclick="restart()">🔄 Refazer o quiz</button>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(pct>=70) confetti();
+}
+
+function restart(){
+  idx=0; score=0; streak=0; bestStreak=0;
+  document.getElementById('finalScreen').classList.add('hidden');
+  document.getElementById('quiz').classList.remove('hidden');
+  render(); window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function confetti(){
+  const colors=['#3B82F6','#7C5CFF','#00A86B','#FF8A3D','#E53935','#FFD93D'];
+  for(let i=0;i<120;i++){
+    const c=document.createElement('div'); c.className='confetti';
+    c.style.left=Math.random()*100+'vw'; c.style.background=colors[Math.floor(Math.random()*colors.length)];
+    c.style.transform=`rotate(${Math.random()*360}deg)`;
+    const dur=2.5+Math.random()*2, delay=Math.random()*1.5;
+    c.style.animation=`fall ${dur}s ${delay}s linear forwards`;
+    document.body.appendChild(c); setTimeout(()=>c.remove(),(dur+delay)*1000+200);
+  }
+}
+const _s=document.createElement('style');
+_s.textContent=`@keyframes fall{to{transform:translateY(105vh) rotate(720deg); opacity:.2;}}`;
+document.head.appendChild(_s);
+
+render();
+</script>
+</body>
+</html>
