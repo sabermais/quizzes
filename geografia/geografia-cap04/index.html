@@ -1,1 +1,289 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz — Europa: Aspectos Econômicos · Geografia 9º ano</title>
+<style>
+  :root{
+    --bg:#060610; --card:#0E0E1F; --card2:#15152B;
+    --accent:#3B82F6; --accent2:#7C5CFF;
+    --ok:#00A86B; --err:#E53935;
+    --txt:#EAEAF5; --muted:#9A9AB5; --border:#262642;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:var(--sans); background:
+      radial-gradient(900px 500px at 110% -5%, rgba(124,92,255,.18), transparent 60%),
+      radial-gradient(800px 500px at -10% 0%, rgba(59,130,246,.16), transparent 55%), var(--bg);
+    color:var(--txt); min-height:100vh; line-height:1.55; -webkit-font-smoothing:antialiased; padding:0 0 60px;}
+  .wrap{max-width:720px; margin:0 auto; padding:20px 18px;}
+  .progress-shell{position:sticky; top:0; z-index:20; background:rgba(6,6,16,.85); backdrop-filter:blur(8px); padding:12px 0 10px;}
+  .progress-track{height:10px; background:#1B1B33; border-radius:999px; overflow:hidden; box-shadow:inset 0 0 0 1px var(--border);}
+  .progress-fill{height:100%; width:0%; border-radius:999px; background:linear-gradient(90deg,var(--accent),var(--accent2)); transition:width .4s cubic-bezier(.4,0,.2,1); box-shadow:0 0 12px rgba(124,92,255,.7);}
+  .meta{display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:.9rem; color:var(--muted); font-weight:700;}
+  .streak{display:flex; align-items:center; gap:6px; opacity:0; transform:scale(.6); transition:.3s; color:#FF8A3D;}
+  .streak.show{opacity:1; transform:scale(1);}
+  .streak.pop{animation:pop .4s;}
+  @keyframes pop{0%{transform:scale(1);}50%{transform:scale(1.35);}100%{transform:scale(1);}}
+  .head{text-align:center; padding:26px 10px 10px;}
+  .head .tag{display:inline-block; font-size:.74rem; letter-spacing:.16em; text-transform:uppercase; font-weight:800; color:#fff; background:linear-gradient(90deg,var(--accent),var(--accent2)); padding:5px 14px; border-radius:999px; margin-bottom:14px;}
+  .head h1{font-size:1.7rem; font-weight:900; letter-spacing:-.5px; line-height:1.15;}
+  .head p{color:var(--muted); margin-top:8px; font-weight:600;}
+  .card{background:linear-gradient(180deg,var(--card),var(--card2)); border:1px solid var(--border); border-radius:20px; padding:24px 22px; margin-top:18px; box-shadow:0 20px 50px -24px rgba(0,0,0,.8);}
+  .qnum{font-size:.82rem; font-weight:800; color:var(--accent); letter-spacing:.04em; text-transform:uppercase;}
+  .lvl{display:inline-block; background:rgba(229,57,53,.18); color:#FF6B68; border:1px solid rgba(229,57,53,.5); font-size:.64rem; padding:2px 9px; border-radius:999px; margin-left:7px; letter-spacing:.08em; vertical-align:middle;}
+  .qtext{font-size:1.18rem; font-weight:800; margin:8px 0 18px; line-height:1.4;}
+  .opt{display:flex; align-items:flex-start; gap:12px; width:100%; text-align:left; cursor:pointer; background:#10101F; border:1.5px solid var(--border); color:var(--txt); border-radius:14px; padding:14px 16px; margin:10px 0; font-size:1rem; font-weight:600; font-family:inherit; transition:.18s;}
+  .opt:hover:not(:disabled){border-color:var(--accent); box-shadow:0 0 0 3px rgba(59,130,246,.15); transform:translateY(-1px);}
+  .opt .letter{flex:none; width:28px; height:28px; border-radius:8px; background:#1E1E3A; color:var(--accent); display:grid; place-items:center; font-weight:900; font-size:.9rem; transition:.18s;}
+  .opt .mark{margin-left:auto; font-size:1.1rem; opacity:0;}
+  .opt.correct{background:rgba(0,168,107,.16); border-color:var(--ok);}
+  .opt.correct .letter{background:var(--ok); color:#fff;} .opt.correct .mark{opacity:1;}
+  .opt.wrong{background:rgba(229,57,53,.14); border-color:var(--err);}
+  .opt.wrong .letter{background:var(--err); color:#fff;} .opt.wrong .mark{opacity:1;}
+  .opt:disabled{cursor:default;}
+  .fb{margin-top:16px; border-radius:14px; padding:16px 18px; font-size:.98rem; display:none; border-left:5px solid;}
+  .fb.show{display:block; animation:fade .35s;}
+  .fb.ok{background:rgba(0,168,107,.10); border-color:var(--ok);}
+  .fb.no{background:rgba(229,57,53,.10); border-color:var(--err);}
+  .fb .fbtitle{font-weight:900; margin-bottom:5px; display:flex; align-items:center; gap:7px;}
+  .fb.ok .fbtitle{color:#3DDC97;} .fb.no .fbtitle{color:#FF6B68;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);}to{opacity:1; transform:none;}}
+  .next{margin-top:18px; width:100%; padding:15px; border:0; border-radius:14px; cursor:pointer; font-family:inherit; font-size:1.05rem; font-weight:800; color:#fff; background:linear-gradient(90deg,var(--accent),var(--accent2)); box-shadow:0 10px 26px -10px rgba(124,92,255,.7); display:none; transition:.18s;}
+  .next:hover{transform:translateY(-2px);} .next.show{display:block;}
+  .final{text-align:center; padding:36px 22px;}
+  .final .medal{font-size:5rem; animation:pop .6s;}
+  .final h2{font-size:1.8rem; font-weight:900; margin:6px 0;}
+  .final .score{font-size:1.1rem; color:var(--muted); font-weight:700;}
+  .final .pct{font-size:3.2rem; font-weight:900; background:linear-gradient(90deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; margin:10px 0;}
+  .final .stats{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin:18px 0 26px;}
+  .final .stat{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 20px; min-width:120px;}
+  .final .stat .big{font-size:1.6rem; font-weight:900;} .final .stat .lbl{font-size:.78rem; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.05em;}
+  .restart{padding:14px 28px; border:0; border-radius:14px; cursor:pointer; font-family:inherit; font-size:1.05rem; font-weight:800; color:#fff; background:linear-gradient(90deg,var(--accent),var(--accent2)); box-shadow:0 10px 26px -10px rgba(124,92,255,.7);}
+  .restart:hover{transform:translateY(-2px);}
+  .confetti{position:fixed; top:-12px; width:10px; height:14px; z-index:50; pointer-events:none; border-radius:2px;}
+  .hidden{display:none;}
+  @media(max-width:480px){ .head h1{font-size:1.4rem;} .qtext{font-size:1.08rem;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="progress-shell">
+    <div class="progress-track"><div class="progress-fill" id="pfill"></div></div>
+    <div class="meta">
+      <span id="counter"></span>
+      <span class="streak" id="streak">🔥 <span id="streakn">0</span> seguidas</span>
+    </div>
+  </div>
+  <div id="quiz">
+    <div class="head">
+      <span class="tag">Geografia • 9º ano</span>
+      <h1>🌍 Europa: Aspectos Econômicos</h1>
+      <p id="intro"></p>
+    </div>
+    <div id="cardArea"></div>
+  </div>
+  <div id="finalScreen" class="final hidden"></div>
+</div>
 
+<script>
+const QUESTIONS = [
+ {q:"Qual é o <b>maior</b> setor da economia europeia?",
+  o:["O setor terciário (serviços e comércio)","O setor primário (agricultura)","O setor secundário (indústria)","O setor quaternário (tecnologia)","O setor extrativista (mineração)"],c:0,
+  fb:"O terciário emprega cerca de 76% dos trabalhadores e gera 70% do PIB europeu — esse crescimento dos serviços se chama <b>terciarização</b>. O primário e o secundário são importantes, mas movimentam bem menos gente e riqueza."},
+
+ {q:"Sobre a <b>União Europeia</b>, é correto afirmar que:",lvl:"AVANÇADA",
+  o:["Tem 27 países e todos obrigatoriamente usam o euro","Tem 27 países e a moeda comum é o euro, mas nem todos os membros o adotam","Reúne todos os países do continente europeu","Responde por mais da metade do comércio mundial","Foi criada para acabar com os subsídios agrícolas"],c:1,
+  fb:"A UE tem 27 países e a moeda comum é o euro, porém nem todos os membros o adotam (pegadinha clássica). Ela não inclui todos os países da Europa, responde por 15% do comércio mundial e mantém a Política Agrícola Comum (subsídios)."},
+
+ {q:"Qual país é a maior economia da Europa, posição que ocupa <b>desde 1980</b>?",
+  o:["França","Reino Unido","Alemanha","Itália","Espanha"],c:2,
+  fb:"A Alemanha tem o maior PIB da Europa desde 1980 (US$ 4,5 trilhões em 2024) e é também a líder industrial. França, Reino Unido, Itália e Espanha vêm logo atrás, mas nenhum a supera."},
+
+ {q:"A regra de que \"champagne só pode se chamar champagne se vier da região de Champagne, na França\" é um exemplo de:",
+  o:["Subsídio agrícola","Barreira alfandegária","Política de livre mercado","Certificação de origem","Terciarização"],c:3,
+  fb:"É uma <b>certificação de origem</b>, que garante qualidade e protege os produtores de um lugar específico. Subsídio é apoio financeiro do governo; barreira alfandegária é taxa de importação; livre mercado e terciarização são outros conceitos do capítulo."},
+
+ {q:"A França criou no século XVII o sistema AOC (a partir do queijo Roquefort). Em <b>1992</b>, qual selo a União Europeia padronizou para proteger a origem dos produtos?",lvl:"AVANÇADA",
+  o:["IG (Identificação Geográfica)","AOC (Appellation d'Origine Contrôlée)","PAC (Política Agrícola Comum)","BCE (Banco Central Europeu)","PDO (Protected Designation of Origin)"],c:4,
+  fb:"Em 1992 a UE criou o selo <b>PDO</b>. O AOC é o sistema francês original (séc. XVII); a IG é o equivalente brasileiro; a PAC é a política agrícola; o BCE é o banco central — nenhum é o selo europeu de origem de 1992."},
+
+ {q:"No Brasil, a Identificação Geográfica (IG) se divide em quais duas modalidades?",
+  o:["IP (Indicação de Procedência) e DO (Denominação de Origem)","AOC e PDO","IP e PAC","DO e BCE","Setor primário e secundário"],c:0,
+  fb:"A IG brasileira tem <b>IP</b> (quando um lugar fica famoso por um produto) e <b>DO</b> (quando as características vêm da natureza e do povo local). AOC e PDO são os selos francês e europeu; PAC e BCE pertencem a outros temas."},
+
+ {q:"Sobre a produção de <b>vinho</b> e <b>azeite</b> na Europa, assinale a correta:",lvl:"AVANÇADA",
+  o:["A Espanha lidera o vinho e a França lidera o azeite","A França lidera o vinho e a Espanha lidera o azeite","A Itália lidera tanto o vinho quanto o azeite","A Grécia lidera o vinho e a Itália, o azeite","Portugal lidera o vinho e o azeite"],c:1,
+  fb:"No vinho a ordem é França (29,5%), Itália e Espanha; no azeite, Espanha (50,2%), Itália e Grécia. Ou seja, a França reina no vinho e a Espanha no azeite. As demais combinações trocam os líderes."},
+
+ {q:"Qual é o cereal <b>mais produzido</b> na Europa, que ajudou a UE a colher 271,6 milhões de toneladas de cereais em 2023?",
+  o:["Arroz","Café","Trigo","Soja","Cacau"],c:2,
+  fb:"O <b>trigo</b> é o cereal nº 1 da Europa. O arroz tem peso menor no continente; café, soja e cacau nem são cereais — aliás, soja, café e cacau estão entre os produtos que a Europa <i>importa</i>."},
+
+ {q:"Um contraste importante da agricultura europeia em relação à dos Estados Unidos é que as fazendas europeias:",lvl:"AVANÇADA",
+  o:["São, em média, 10 vezes maiores que as dos EUA","Não usam tecnologia moderna","Produzem só para consumo próprio, sem exportar","São, em média, cerca de 10 vezes menores que as dos EUA","Ficam quase todas no leste e nenhuma no norte"],c:3,
+  fb:"As propriedades europeias são, em média, cerca de <b>10 vezes menores</b> que as americanas, ainda que muito modernas e produtivas. A Europa exporta bastante (trigo, vinho etc.), e há grandes fazendas no norte e pequenas no sul e leste."},
+
+ {q:"A Europa exporta vários produtos agrícolas, mas precisa <b>importar</b> outros. Qual grupo a Europa importa?",
+  o:["Trigo, cevada e vinho","Azeite, aves e suínos","Laticínios e cereais","Beterraba e uvas","Soja, café, cacau, chá, algodão e frutas tropicais"],c:4,
+  fb:"A Europa importa o que seu clima não produz bem: <b>soja, café, cacau, chá, algodão, frutas tropicais e tabaco</b>. Trigo, cevada, vinho, azeite, aves, suínos e laticínios estão entre os produtos que ela exporta."},
+
+ {q:"Sobre a <b>pecuária</b> europeia, qual associação país → especialidade está correta?",lvl:"AVANÇADA",
+  o:["Grécia → cabras","França → cabras","Espanha → bois","Grécia → porcos","França → ovelhas"],c:0,
+  fb:"A Grécia se destaca em <b>cabras</b> (~25,8%), a Espanha em porcos e ovelhas e a França em bois. As outras opções trocam as especializações — um erro que os professores adoram cobrar."},
+
+ {q:"Por que a produção de <b>leite</b> é tão valorizada na Europa?",
+  o:["Quase todo o leite é exportado cru, sem transformação","Cerca de 70% do leite vira queijo e manteiga (alto valor), e a Alemanha é a maior produtora","O leite europeu é todo importado da América","A Grécia é a maior produtora de leite da UE","O leite serve apenas para produzir biocombustível"],c:1,
+  fb:"Cerca de <b>70% do leite</b> europeu é transformado em queijo e manteiga (produtos de alto valor), e a <b>Alemanha</b> é a maior produtora da UE. O leite não é exportado cru nem importado das Américas, e a maior produtora não é a Grécia."},
+
+ {q:"Portugal tem um destaque <b>mundial</b> em um produto florestal específico. Qual?",lvl:"AVANÇADA",
+  o:["Petróleo","Lítio","Cortiça — a Europa faz 80% da mundial e metade vem de Portugal","Atum azul","Algodão"],c:2,
+  fb:"A Europa produz <b>80% da cortiça</b> do mundo, e cerca de metade vem de Portugal. Petróleo e lítio são, na verdade, recursos que a Europa importa; o atum azul é da pesca (e está ameaçado); o algodão também é importado."},
+
+ {q:"A pesca europeia representa cerca de 5% da produção mundial. Que problema ambiental o capítulo destaca nesse setor?",
+  o:["O excesso de pesca de salmão no Mar do Norte","A falta total de peixes em toda a Europa","A proibição completa da pesca desde 2023","O atum azul está em risco de extinção no Mediterrâneo","A pesca responde por 50% do PIB europeu"],c:3,
+  fb:"O capítulo alerta para o risco de extinção do <b>atum azul</b> no Mediterrâneo. A pesca europeia é pequena (5% do mundo), não foi proibida por completo e está longe de representar metade do PIB."},
+
+ {q:"O que é a <b>PAC</b> (Política Agrícola Comum) da União Europeia?",
+  o:["Um imposto cobrado dos agricultores europeus","O banco central que cuida do euro","Um acordo de turismo entre Europa e Brasil","A proibição de carros a combustão","Um conjunto de regras e investimentos para apoiar os agricultores, com 386,6 bilhões de euros previstos para 2021–2027"],c:4,
+  fb:"A PAC garante renda mínima e práticas sustentáveis aos agricultores, com <b>386,6 bilhões de euros</b> previstos para 2021–2027 (reformada em janeiro de 2023). Não é imposto; o banco do euro é o BCE; turismo e carros a combustão são outros assuntos."},
+
+ {q:"No <b>setor secundário</b>, qual afirmação é correta?",lvl:"AVANÇADA",
+  o:["O Vale do Ruhr (Alemanha) é a maior área industrial da Europa e a Airbus lidera a aviação comercial mundial desde 2020","A Airbus perde para a Boeing na aviação comercial","O Vale do Ruhr fica na França","A Europa não tem indústria farmacêutica relevante","A maior área industrial da Europa é Paris"],c:0,
+  fb:"O <b>Vale do Ruhr</b>, na Alemanha, é a maior área industrial europeia, e a <b>Airbus</b> superou a Boeing, liderando a aviação comercial desde 2020. A Europa também sedia gigantes farmacêuticas (Bayer, Novartis, Roche, Sanofi)."},
+
+ {q:"O que vai acontecer na União Europeia <b>a partir de 2035</b>, ligado ao Acordo de Paris?",
+  o:["Todos os carros elétricos serão proibidos","Será proibida a venda de carros novos a combustão; serão todos elétricos","Acaba a indústria automotiva europeia","A UE deixará o Acordo de Paris","Só Ferrari e Porsche poderão ser vendidas"],c:1,
+  fb:"A partir de 2035, a UE <b>proíbe a venda de carros novos a combustão</b> — eles terão que ser elétricos, para cumprir o Acordo de Paris (limite de 1,5 °C). A indústria automotiva continua, mas migrando para o elétrico."},
+
+ {q:"Sobre o comércio e as finanças europeias, assinale a correta:",lvl:"AVANÇADA",
+  o:["A UE teve déficit recorde e fechou a bolsa de Londres","Frankfurt é centro financeiro só de turismo e Londres é a sede do BCE","Em 2024 a UE teve superávit de €147 bilhões; Londres é centro financeiro histórico e Frankfurt sedia o BCE","O Banco Central Europeu fica em Paris","A UE importa muito mais do que exporta, com déficit gigante"],c:2,
+  fb:"A UE teve <b>superávit de €147 bilhões</b> em 2024 (exportou mais do que importou). <b>Londres</b> é centro financeiro desde a Idade Média e <b>Frankfurt</b> sedia o Banco Central Europeu (BCE) — não Paris."},
+
+ {q:"O acordo <b>Mercosul–União Europeia</b> uniria cerca de 800 milhões de pessoas, mas enfrenta entraves. Qual é um deles?",
+  o:["A falta de interesse total do Brasil em exportar","A proibição de turismo entre os blocos","A ausência de moeda no Mercosul","Exigências ambientais europeias (desmatamento no Brasil) e o medo da concorrência agrícola","O fim da Política Agrícola Comum"],c:3,
+  fb:"Os entraves envolvem as <b>exigências ambientais</b> europeias (preocupação com o desmatamento no Brasil) e o receio dos agricultores europeus quanto à concorrência. O acordo justamente busca facilitar o comércio entre os blocos."},
+
+ {q:"Sobre o <b>turismo</b>, qual comparação reflete o que o capítulo chama de \"choque de realidade\"?",lvl:"AVANÇADA",
+  o:["O Brasil recebe mais turistas que toda a Europa","França e Brasil recebem o mesmo número de turistas","A Europa recebe menos de 10% dos turistas do mundo","O turismo não tem peso no PIB europeu","A Europa recebeu 747 milhões de turistas em 2024, enquanto o Brasil recebeu apenas 6,7 milhões"],c:4,
+  fb:"A Europa concentra cerca de <b>metade</b> do turismo mundial — 747 milhões de chegadas em 2024 — contra apenas <b>6,7 milhões</b> do Brasil, que sofre com infraestrutura, segurança e divulgação. A França é o país mais visitado do mundo."},
+
+ {q:"Sobre os <b>transportes</b> na Europa, assinale a correta:",
+  o:["A rodovia domina o transporte de cargas (51%), e na Alemanha as autobahns têm trechos sem limite de velocidade","A ferrovia transporta a maior parte das cargas","Não existe ligação entre a Europa continental e o Reino Unido","O Eurotúnel liga a Europa à África","Todos os trens europeus são lentos, abaixo de 100 km/h"],c:0,
+  fb:"Mesmo com trens de alta velocidade (até 400 km/h) e o <b>Eurotúnel</b> ligando o continente ao Reino Unido por baixo do mar, a <b>rodovia</b> ainda domina as cargas (51%). As autobahns alemãs têm trechos sem limite de velocidade."}
+];
+
+let idx=0, score=0, streak=0, bestStreak=0, answered=false;
+const cardArea=document.getElementById('cardArea');
+const pfill=document.getElementById('pfill');
+const counter=document.getElementById('counter');
+const streakEl=document.getElementById('streak');
+const streakN=document.getElementById('streakn');
+document.getElementById('intro').textContent=`${QUESTIONS.length} questões • escolha a alternativa correta e veja a explicação`;
+
+function shuffled(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function render(){
+  answered=false;
+  const item=QUESTIONS[idx];
+  counter.textContent=`Questão ${idx+1} de ${QUESTIONS.length}`;
+  pfill.style.width=`${(idx/QUESTIONS.length)*100}%`;
+  const letters=['A','B','C','D','E'];
+  const order=shuffled(item.o.map((_,i)=>i));
+  const opts=order.map((orig,pos)=>`
+    <button class="opt" data-i="${orig}" onclick="choose(${orig})">
+      <span class="letter">${letters[pos]}</span>
+      <span class="otext">${item.o[orig]}</span>
+      <span class="mark"></span>
+    </button>`).join('');
+  cardArea.innerHTML=`
+    <div class="card">
+      <div class="qnum">Questão ${idx+1}${item.lvl?` <span class="lvl">🔴 ${item.lvl}</span>`:''}</div>
+      <div class="qtext">${item.q}</div>
+      <div id="opts">${opts}</div>
+      <div class="fb" id="fb"></div>
+      <button class="next" id="next" onclick="nextQ()">${idx===QUESTIONS.length-1?'Ver resultado 🏁':'Próxima →'}</button>
+    </div>`;
+}
+
+function choose(i){
+  if(answered) return; answered=true;
+  const item=QUESTIONS[idx];
+  document.querySelectorAll('.opt').forEach(b=>{
+    const bi=+b.dataset.i; b.disabled=true;
+    if(bi===item.c){ b.classList.add('correct'); b.querySelector('.mark').textContent='✅'; }
+    if(bi===i && i!==item.c){ b.classList.add('wrong'); b.querySelector('.mark').textContent='❌'; }
+  });
+  const fb=document.getElementById('fb');
+  if(i===item.c){
+    score++; streak++; bestStreak=Math.max(bestStreak,streak);
+    fb.className='fb ok show'; fb.innerHTML=`<div class="fbtitle">✅ Acertou!</div>${item.fb}`;
+  } else {
+    streak=0;
+    fb.className='fb no show'; fb.innerHTML=`<div class="fbtitle">❌ Não foi dessa vez</div>${item.fb}`;
+  }
+  updateStreak();
+  document.getElementById('next').classList.add('show');
+}
+
+function updateStreak(){
+  if(streak>=2){ streakN.textContent=streak; streakEl.classList.add('show');
+    streakEl.classList.remove('pop'); void streakEl.offsetWidth; streakEl.classList.add('pop'); }
+  else streakEl.classList.remove('show');
+}
+
+function nextQ(){ idx++; if(idx>=QUESTIONS.length) showFinal(); else { render(); window.scrollTo({top:0,behavior:'smooth'}); } }
+
+function showFinal(){
+  pfill.style.width='100%'; counter.textContent='Concluído!'; streakEl.classList.remove('show');
+  document.getElementById('quiz').classList.add('hidden');
+  const fs=document.getElementById('finalScreen'); fs.classList.remove('hidden');
+  const pct=Math.round((score/QUESTIONS.length)*100);
+  let medal,msg;
+  if(pct===100){medal='🏆';msg='Perfeito! Você dominou o capítulo!';}
+  else if(pct>=80){medal='🥇';msg='Excelente! Você manda muito bem.';}
+  else if(pct>=60){medal='🥈';msg='Bom trabalho! Já está afiado.';}
+  else if(pct>=40){medal='🥉';msg='Tá no caminho — revise e tente de novo!';}
+  else {medal='📚';msg='Bora revisar o resumo e voltar mais forte!';}
+  fs.innerHTML=`
+    <div class="medal">${medal}</div>
+    <h2>${msg}</h2>
+    <div class="pct">${pct}%</div>
+    <div class="score">Você acertou ${score} de ${QUESTIONS.length} questões</div>
+    <div class="stats">
+      <div class="stat"><div class="big">${score}/${QUESTIONS.length}</div><div class="lbl">Acertos</div></div>
+      <div class="stat"><div class="big">🔥 ${bestStreak}</div><div class="lbl">Maior sequência</div></div>
+      <div class="stat"><div class="big">${pct}%</div><div class="lbl">Aproveitamento</div></div>
+    </div>
+    <button class="restart" onclick="restart()">🔄 Refazer o quiz</button>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(pct>=70) confetti();
+}
+
+function restart(){
+  idx=0; score=0; streak=0; bestStreak=0;
+  document.getElementById('finalScreen').classList.add('hidden');
+  document.getElementById('quiz').classList.remove('hidden');
+  render(); window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function confetti(){
+  const colors=['#3B82F6','#7C5CFF','#00A86B','#FF8A3D','#E53935','#FFD93D'];
+  for(let i=0;i<120;i++){
+    const c=document.createElement('div'); c.className='confetti';
+    c.style.left=Math.random()*100+'vw'; c.style.background=colors[Math.floor(Math.random()*colors.length)];
+    c.style.transform=`rotate(${Math.random()*360}deg)`;
+    const dur=2.5+Math.random()*2, delay=Math.random()*1.5;
+    c.style.animation=`fall ${dur}s ${delay}s linear forwards`;
+    document.body.appendChild(c); setTimeout(()=>c.remove(),(dur+delay)*1000+200);
+  }
+}
+const _s=document.createElement('style');
+_s.textContent=`@keyframes fall{to{transform:translateY(105vh) rotate(720deg); opacity:.2;}}`;
+document.head.appendChild(_s);
+
+render();
+</script>
+</body>
+</html>
