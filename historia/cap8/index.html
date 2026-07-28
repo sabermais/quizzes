@@ -1,1 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz — Um país em busca de mudanças</title>
+<style>
+  :root{
+    --bg:#060610; --card:#0E0E1F; --card2:#15152B;
+    --accent:#3B82F6; --accent2:#7C5CFF;
+    --ok:#00A86B; --err:#E53935;
+    --txt:#EAEAF5; --muted:#9A9AB5; --border:#262642;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:var(--sans); background:
+      radial-gradient(900px 500px at 110% -5%, rgba(124,92,255,.18), transparent 60%),
+      radial-gradient(800px 500px at -10% 0%, rgba(59,130,246,.16), transparent 55%), var(--bg);
+    color:var(--txt); min-height:100vh; line-height:1.55; -webkit-font-smoothing:antialiased; padding:0 0 60px;}
+  .wrap{max-width:720px; margin:0 auto; padding:20px 18px;}
+  .progress-shell{position:sticky; top:0; z-index:20; background:rgba(6,6,16,.85); backdrop-filter:blur(8px); padding:12px 0 10px;}
+  .progress-track{height:10px; background:#1B1B33; border-radius:999px; overflow:hidden; box-shadow:inset 0 0 0 1px var(--border);}
+  .progress-fill{height:100%; width:0%; border-radius:999px; background:linear-gradient(90deg,var(--accent),var(--accent2)); transition:width .4s cubic-bezier(.4,0,.2,1); box-shadow:0 0 12px rgba(124,92,255,.7);}
+  .meta{display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:.9rem; color:var(--muted); font-weight:700;}
+  .streak{display:flex; align-items:center; gap:6px; opacity:0; transform:scale(.6); transition:.3s; color:#FF8A3D;}
+  .streak.show{opacity:1; transform:scale(1);}
+  .streak.pop{animation:pop .4s;}
+  @keyframes pop{0%{transform:scale(1);}50%{transform:scale(1.35);}100%{transform:scale(1);}}
+  .head{text-align:center; padding:26px 10px 10px;}
+  .head .tag{display:inline-block; font-size:.74rem; letter-spacing:.16em; text-transform:uppercase; font-weight:800; color:#fff; background:linear-gradient(90deg,var(--accent),var(--accent2)); padding:5px 14px; border-radius:999px; margin-bottom:14px;}
+  .head h1{font-size:1.7rem; font-weight:900; letter-spacing:-.5px; line-height:1.15;}
+  .head p{color:var(--muted); margin-top:8px; font-weight:600;}
+  .card{background:linear-gradient(180deg,var(--card),var(--card2)); border:1px solid var(--border); border-radius:20px; padding:24px 22px; margin-top:18px; box-shadow:0 20px 50px -24px rgba(0,0,0,.8);}
+  .qnum{font-size:.82rem; font-weight:800; color:var(--accent); letter-spacing:.04em; text-transform:uppercase;}
+  .lvl{display:inline-block; background:rgba(229,57,53,.18); color:#FF6B68; border:1px solid rgba(229,57,53,.5); font-size:.64rem; padding:2px 9px; border-radius:999px; margin-left:7px; letter-spacing:.08em; vertical-align:middle;}
+  .qtext{font-size:1.18rem; font-weight:800; margin:8px 0 18px; line-height:1.4;}
+  .opt{display:flex; align-items:flex-start; gap:12px; width:100%; text-align:left; cursor:pointer; background:#10101F; border:1.5px solid var(--border); color:var(--txt); border-radius:14px; padding:14px 16px; margin:10px 0; font-size:1rem; font-weight:600; font-family:inherit; transition:.18s;}
+  .opt:hover:not(:disabled){border-color:var(--accent); box-shadow:0 0 0 3px rgba(59,130,246,.15); transform:translateY(-1px);}
+  .opt .letter{flex:none; width:28px; height:28px; border-radius:8px; background:#1E1E3A; color:var(--accent); display:grid; place-items:center; font-weight:900; font-size:.9rem; transition:.18s;}
+  .opt .mark{margin-left:auto; font-size:1.1rem; opacity:0;}
+  .opt.correct{background:rgba(0,168,107,.16); border-color:var(--ok);}
+  .opt.correct .letter{background:var(--ok); color:#fff;} .opt.correct .mark{opacity:1;}
+  .opt.wrong{background:rgba(229,57,53,.14); border-color:var(--err);}
+  .opt.wrong .letter{background:var(--err); color:#fff;} .opt.wrong .mark{opacity:1;}
+  .opt:disabled{cursor:default;}
+  .fb{margin-top:16px; border-radius:14px; padding:16px 18px; font-size:.98rem; display:none; border-left:5px solid;}
+  .fb.show{display:block; animation:fade .35s;}
+  .fb.ok{background:rgba(0,168,107,.10); border-color:var(--ok);}
+  .fb.no{background:rgba(229,57,53,.10); border-color:var(--err);}
+  .fb .fbtitle{font-weight:900; margin-bottom:5px; display:flex; align-items:center; gap:7px;}
+  .fb.ok .fbtitle{color:#3DDC97;} .fb.no .fbtitle{color:#FF6B68;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);}to{opacity:1; transform:none;}}
+  .next{margin-top:18px; width:100%; padding:15px; border:0; border-radius:14px; cursor:pointer; font-family:inherit; font-size:1.05rem; font-weight:800; color:#fff; background:linear-gradient(90deg,var(--accent),var(--accent2)); box-shadow:0 10px 26px -10px rgba(124,92,255,.7); display:none; transition:.18s;}
+  .next:hover{transform:translateY(-2px);} .next.show{display:block;}
+  .final{text-align:center; padding:36px 22px;}
+  .final .medal{font-size:5rem; animation:pop .6s;}
+  .final h2{font-size:1.8rem; font-weight:900; margin:6px 0;}
+  .final .score{font-size:1.1rem; color:var(--muted); font-weight:700;}
+  .final .pct{font-size:3.2rem; font-weight:900; background:linear-gradient(90deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; margin:10px 0;}
+  .final .stats{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin:18px 0 26px;}
+  .final .stat{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 20px; min-width:120px;}
+  .final .stat .big{font-size:1.6rem; font-weight:900;} .final .stat .lbl{font-size:.78rem; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.05em;}
+  .restart{padding:14px 28px; border:0; border-radius:14px; cursor:pointer; font-family:inherit; font-size:1.05rem; font-weight:800; color:#fff; background:linear-gradient(90deg,var(--accent),var(--accent2)); box-shadow:0 10px 26px -10px rgba(124,92,255,.7);}
+  .restart:hover{transform:translateY(-2px);}
+  .confetti{position:fixed; top:-12px; width:10px; height:14px; z-index:50; pointer-events:none; border-radius:2px;}
+  .hidden{display:none;}
+  @media(max-width:480px){ .head h1{font-size:1.4rem;} .qtext{font-size:1.08rem;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="progress-shell">
+    <div class="progress-track"><div class="progress-fill" id="pfill"></div></div>
+    <div class="meta">
+      <span id="counter"></span>
+      <span class="streak" id="streak">🔥 <span id="streakn">0</span> seguidas</span>
+    </div>
+  </div>
+  <div id="quiz">
+    <div class="head">
+      <span class="tag">História • 9º ano</span>
+      <h1>🌟 Um país em busca de mudanças</h1>
+      <p id="intro"></p>
+    </div>
+    <div id="cardArea"></div>
+  </div>
+  <div id="finalScreen" class="final hidden"></div>
+</div>
 
+<script>
+const QUESTIONS = [
+ {q:"Onde e quando aconteceu a Semana de Arte Moderna?",
+  o:["No Theatro Municipal de São Paulo, entre 13 e 18 de fevereiro de 1922","No Theatro Municipal do Rio de Janeiro, em setembro de 1922","Na Exposição do Centenário, no Rio de Janeiro, em 1922","No Forte de Copacabana, em julho de 1922","Na Esplanada do Castelo, no Rio de Janeiro, em 1922"],c:0,
+  fb:"A Semana aconteceu no Theatro Municipal de São Paulo, em fevereiro de 1922. O Rio de Janeiro é o cenário do Centenário da Independência (setembro), do Forte de Copacabana (julho) e da primeira transmissão de rádio (Esplanada do Castelo) — eventos diferentes, no mesmo ano."},
+
+ {q:"Além da apresentação de obras de arte, o que a Semana de Arte Moderna representou para o Brasil?",lvl:"AVANÇADA",
+  o:["Um movimento de renovação cultural e intelectual, que buscava romper com os padrões acadêmicos e criar uma identidade brasileira moderna","Uma comemoração oficial do governo para celebrar o Centenário da Independência","Um protesto armado contra o presidente Artur Bernardes","A fundação oficial do Partido Comunista do Brasil","Uma campanha pelo voto feminino organizada por artistas"],c:0,
+  fb:"A Semana foi um movimento de renovação cultural e intelectual — não uma ação do governo, nem um protesto armado, nem ligada à fundação do PCB ou à luta pelo voto feminino, que foram acontecimentos paralelos de 1922."},
+
+ {q:"O Partido Comunista do Brasil (PCB) foi fundado em 1922...",
+  o:["no Rio de Janeiro, por lideranças ligadas ao movimento operário, inspirado na Revolução Russa de 1917","em São Paulo, por artistas modernistas, inspirado na Semana de Arte Moderna","no Recife, por João Pessoa, inspirado na Aliança Liberal","em Minas Gerais, por Artur Bernardes, inspirado na Reação Republicana","no Rio Grande do Sul, por Getúlio Vargas, inspirado no tenentismo"],c:0,
+  fb:"O PCB nasceu no Rio de Janeiro, com lideranças vindas do movimento operário (muitas ex-anarquistas), inspirado na Revolução Russa de 1917 — sem relação direta com os outros nomes e eventos citados."},
+
+ {q:"O direito ao voto feminino no Brasil foi conquistado em:",
+  o:["1932, pelo Código Eleitoral","1922, junto com a fundação da Federação Brasileira pelo Progresso Feminino","1930, com a Revolução","1889, com a Proclamação da República","1946, com a nova Constituição"],c:0,
+  fb:"O voto feminino só veio em 1932, pelo Código Eleitoral. A Federação Brasileira pelo Progresso Feminino foi fundada em 1922, mas fundar a organização não é o mesmo que conquistar o direito — essa é uma pegadinha clássica."},
+
+ {q:"Qual foi o principal contraste do Centenário da Independência (1922-1923)?",lvl:"AVANÇADA",
+  o:["A vitrine oficial de progresso e modernidade escondia problemas reais como corrupção, fraudes eleitorais e desigualdade social","O governo não investiu em nenhuma obra pública durante as comemorações","A Exposição do Centenário foi cancelada por falta de dinheiro","O evento uniu todos os partidos políticos em torno do presidente","A Exposição serviu para anunciar oficialmente o fim da Primeira República"],c:0,
+  fb:"O governo investia em avenidas, obras e grandes desfiles para projetar a imagem de um país moderno e unido, enquanto a corrupção, o voto de cabresto e a desigualdade continuavam — nada disso significa ausência de investimento nem o fim da República, que só viria em 1930."},
+
+ {q:"A Revolta dos 18 do Forte de Copacabana aconteceu em:",
+  o:["2 de julho de 1922, quando oficiais se rebelaram contra as fraudes eleitorais e a corrupção","24 de outubro de 1929, quando a Bolsa de Nova York quebrou","26 de julho de 1930, quando João Pessoa foi assassinado","13 de fevereiro de 1922, durante a Semana de Arte Moderna","3 de outubro de 1930, no início da Revolução"],c:0,
+  fb:"A revolta foi em 2 de julho de 1922. As outras datas marcam eventos diferentes: a quebra da Bolsa (1929), o assassinato de João Pessoa (1930) e o início da Revolução (1930)."},
+
+ {q:"Dos 18 militares que marcharam até a praia após a revolta no Forte de Copacabana, quem sobreviveu?",lvl:"AVANÇADA",
+  o:["Apenas Siqueira Campos e Eduardo Gomes","Todos os 18 sobreviveram e se renderam ao governo","Apenas Luís Carlos Prestes","Nenhum deles sobreviveu","Apenas João Pessoa e Artur Bernardes"],c:0,
+  fb:"Só Siqueira Campos e Eduardo Gomes sobreviveram à marcha até a praia. Luís Carlos Prestes, João Pessoa e Artur Bernardes não participaram desse episódio — eles aparecem em outros momentos da década."},
+
+ {q:"Assinale a sequência CORRETA das primeiras revoltas tenentistas:",lvl:"AVANÇADA",
+  o:["1922 (Forte de Copacabana) → 1924 (Revolta Paulista) → 1925 (Revolta de Juazeiro do Norte) → 1925-1927 (Coluna Prestes)","1924 (Forte de Copacabana) → 1922 (Revolta Paulista) → 1927 (Coluna Prestes) → 1930 (Revolta de Juazeiro do Norte)","1922 (Coluna Prestes) → 1924 (Forte de Copacabana) → 1925 (Revolta Paulista) → 1929 (Revolta de Juazeiro do Norte)","1929 (Forte de Copacabana) → 1930 (Revolta Paulista) → 1922 (Coluna Prestes) → 1925 (Revolta de Juazeiro do Norte)","Todas essas revoltas aconteceram no mesmo ano, 1922"],c:0,
+  fb:"O tenentismo é uma série de revoltas ao longo de vários anos: 1922 (Forte de Copacabana), 1924 (Revolta Paulista), 1925 (Juazeiro do Norte) e 1925-1927 (Coluna Prestes) — não é um evento único nem tudo aconteceu no mesmo ano."},
+
+ {q:"Na eleição presidencial de 1922, quem venceu Nilo Peçanha, candidato da Reação Republicana?",
+  o:["Artur Bernardes","Washington Luís","Júlio Prestes","Getúlio Vargas","Luís Carlos Prestes"],c:0,
+  fb:"Artur Bernardes venceu a eleição de 1922. Washington Luís foi presidente depois dele (1926-1930), Júlio Prestes foi candidato em 1930, Getúlio Vargas venceu a Revolução de 1930, e Luís Carlos Prestes liderou a Coluna Prestes — nenhum deles concorreu nessa eleição de 1922."},
+
+ {q:"Artur Bernardes, presidente do Brasil entre 1922 e 1926, era de qual estado?",lvl:"AVANÇADA",
+  o:["Minas Gerais (MG)","São Paulo (SP)","Rio Grande do Sul (RS)","Rio de Janeiro (RJ)","Paraíba (PB)"],c:0,
+  fb:"Artur Bernardes era mineiro (MG). São Paulo está ligado a Washington Luís e Júlio Prestes; Rio Grande do Sul, a Getúlio Vargas; e Paraíba, a João Pessoa — cuidado para não trocar os estados dos personagens dessa década."},
+
+ {q:"A Coluna Prestes (1925-1927) percorreu, aproximadamente:",
+  o:["Mais de 25 mil km, por 13 estados, ao longo de cerca de 2 anos","5 mil km, por 3 estados, em 6 meses","100 mil km, por todos os estados do Brasil, em 5 anos","25 mil km, mas apenas dentro do Rio Grande do Sul","Não há registro da distância percorrida pela Coluna"],c:0,
+  fb:"A marcha somou mais de 25 mil km por 13 estados, ao longo de cerca de 2 anos — um dos maiores deslocamentos militares da história do Brasil, e não ficou restrita a um único estado."},
+
+ {q:"Sobre Júlio Prestes e Luís Carlos Prestes, é correto afirmar que:",lvl:"AVANÇADA",
+  o:["São pessoas diferentes — Júlio Prestes foi candidato à Presidência em 1930 pela situação, e Luís Carlos Prestes liderou a Coluna Prestes, tornando-se comunista depois","São a mesma pessoa, que mudou de nome após a Revolução de 1930","Júlio Prestes liderou a Coluna Prestes e depois virou comunista","Luís Carlos Prestes foi eleito presidente do Brasil em 1930","Os dois lutaram lado a lado na Revolução de 1930"],c:0,
+  fb:"São duas pessoas diferentes: Júlio Prestes concorreu à Presidência em 1930 pelo lado da situação, enquanto Luís Carlos Prestes liderou a Coluna Prestes (1925-1927) e só depois se tornou comunista — essa é uma das pegadinhas mais cobradas do capítulo."},
+
+ {q:"A quebra da Bolsa de Nova York, conhecida como 'quinta-feira negra', aconteceu em:",
+  o:["24 de outubro de 1929","2 de julho de 1922","26 de julho de 1930","3 de novembro de 1930","13 de fevereiro de 1922"],c:0,
+  fb:"A quebra da Bolsa foi em 24 de outubro de 1929. As outras datas marcam a Revolta dos 18 (julho de 1922), o assassinato de João Pessoa (julho de 1930), a posse de Vargas (novembro de 1930) e a Semana de Arte Moderna (fevereiro de 1922)."},
+
+ {q:"Entre agosto de 1929 e janeiro de 1930, o preço da saca de café no Brasil:",lvl:"AVANÇADA",
+  o:["Caiu de 200 mil-réis para 21 mil-réis, uma queda de 89,5% em 5 meses","Subiu de 21 mil-réis para 200 mil-réis, um aumento de quase 10 vezes","Ficou estável, protegido pelo Convênio de Taubaté","Caiu pela metade e se recuperou logo em seguida","Não sofreu nenhum impacto da crise internacional"],c:0,
+  fb:"O preço despencou de 200 para 21 mil-réis — uma queda de 89,5% em apenas 5 meses. O Convênio de Taubaté já não conseguia mais proteger os fazendeiros diante de uma crise dessa magnitude."},
+
+ {q:"Na eleição de 1930, quem foram os dois principais candidatos à Presidência?",
+  o:["Getúlio Vargas (Aliança Liberal) e Júlio Prestes (situação)","Artur Bernardes (Aliança Liberal) e Washington Luís (situação)","Luís Carlos Prestes (Aliança Liberal) e João Pessoa (situação)","Getúlio Vargas (situação) e Artur Bernardes (Aliança Liberal)","Washington Luís (Aliança Liberal) e Getúlio Vargas (situação)"],c:0,
+  fb:"A disputa foi entre Getúlio Vargas, pela Aliança Liberal, e Júlio Prestes, candidato oficial apoiado por Washington Luís e pela oligarquia cafeeira. Os outros pares misturam nomes de momentos e papéis diferentes da década."},
+
+ {q:"A Aliança Liberal, formada para a eleição de 1930, reunia principalmente:",lvl:"AVANÇADA",
+  o:["Rio Grande do Sul (Getúlio Vargas), Paraíba (João Pessoa) e Minas Gerais (Antônio Carlos)","São Paulo, Rio de Janeiro e Minas Gerais, os três estados da Política do Café com Leite","Apenas o Rio Grande do Sul, estado natal de Getúlio Vargas","Todos os estados do Norte e Nordeste do Brasil","Paraíba, Pernambuco e Bahia, unidos contra o Rio de Janeiro"],c:0,
+  fb:"A Aliança uniu Rio Grande do Sul (Vargas), Paraíba (João Pessoa, vice) e Minas Gerais (Antônio Carlos) — justamente oligarquias que ficavam de fora do arranjo tradicional do Café com Leite entre São Paulo e Minas."},
+
+ {q:"João Pessoa, candidato a vice de Getúlio Vargas, foi assassinado em:",
+  o:["26 de julho de 1930, no Recife","2 de julho de 1922, no Forte de Copacabana","24 de outubro de 1929, em Nova York","3 de novembro de 1930, no Rio de Janeiro","13 de fevereiro de 1922, em São Paulo"],c:0,
+  fb:"João Pessoa foi assassinado em 26 de julho de 1930, no Recife, ao sair da Confeitaria Glória. As demais datas e locais pertencem a outros episódios da década."},
+
+ {q:"Sobre o assassinato de João Pessoa, é correto dizer que:",lvl:"AVANÇADA",
+  o:["Foi o estopim da Revolução de 1930, mas não sua causa única — a crise política e econômica já vinha se acumulando havia anos","Foi a única causa da Revolução de 1930, sem nenhuma relação com a crise econômica ou política","Foi ordenado diretamente por Washington Luís","Impediu que a Revolução de 1930 acontecesse","Aconteceu depois que Getúlio Vargas já havia assumido o governo"],c:0,
+  fb:"O assassinato foi o estopim — o gatilho que uniu os opositores — mas a Revolução já vinha sendo preparada por causas mais profundas: a crise de 1929, as fraudes eleitorais e o desgaste da Primeira República."},
+
+ {q:"Assinale a sequência correta da Revolução de 1930:",
+  o:["3/10 tropas partem do Rio Grande do Sul → 24/10 Washington Luís é deposto → 3/11 Vargas assume o Governo Provisório","24/10 Vargas assume → 3/10 tropas partem do RS → 3/11 Washington Luís é deposto","3/11 tropas partem do RS → 24/10 Vargas assume → 3/10 Washington Luís é deposto","Washington Luís nunca foi deposto — ele renunciou voluntariamente em 1931","3/10 Washington Luís é deposto → 24/10 tropas partem do RS → 3/11 Vargas assume"],c:0,
+  fb:"A ordem certa é: 3 de outubro as tropas partem do Rio Grande do Sul, 24 de outubro Washington Luís é deposto por uma junta militar, e 3 de novembro a junta entrega o poder a Getúlio Vargas."},
+
+ {q:"É correto afirmar sobre a Revolução de 1930 que ela:",lvl:"AVANÇADA",
+  o:["Encerrou a Primeira República e tirou as oligarquias do poder, mas não transformou de imediato toda a estrutura social e econômica do país","Foi uma revolução socialista que aboliu a propriedade privada no Brasil","Transformou imediatamente toda a estrutura social e econômica do país","Manteve Washington Luís no poder até o fim do seu mandato","Foi organizada e vencida pela oligarquia cafeeira paulista"],c:0,
+  fb:"A Revolução encerrou a Primeira República e tirou as oligarquias tradicionais do poder, mas a mudança na estrutura social e econômica do Brasil veio aos poucos, não de um dia para o outro — e não teve caráter socialista nem foi vencida pela oligarquia cafeeira, que era justamente o lado derrotado."},
+];
+
+let idx=0, score=0, streak=0, bestStreak=0, answered=false;
+const cardArea=document.getElementById('cardArea');
+const pfill=document.getElementById('pfill');
+const counter=document.getElementById('counter');
+const streakEl=document.getElementById('streak');
+const streakN=document.getElementById('streakn');
+document.getElementById('intro').textContent=`${QUESTIONS.length} questões • escolha a alternativa correta e veja a explicação`;
+
+function shuffled(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function render(){
+  answered=false;
+  const item=QUESTIONS[idx];
+  counter.textContent=`Questão ${idx+1} de ${QUESTIONS.length}`;
+  pfill.style.width=`${(idx/QUESTIONS.length)*100}%`;
+  const letters=['A','B','C','D','E'];
+  const order=shuffled(item.o.map((_,i)=>i));
+  const opts=order.map((orig,pos)=>`
+    <button class="opt" data-i="${orig}" onclick="choose(${orig})">
+      <span class="letter">${letters[pos]}</span>
+      <span class="otext">${item.o[orig]}</span>
+      <span class="mark"></span>
+    </button>`).join('');
+  cardArea.innerHTML=`
+    <div class="card">
+      <div class="qnum">Questão ${idx+1}${item.lvl?` <span class="lvl">🔴 ${item.lvl}</span>`:''}</div>
+      <div class="qtext">${item.q}</div>
+      <div id="opts">${opts}</div>
+      <div class="fb" id="fb"></div>
+      <button class="next" id="next" onclick="nextQ()">${idx===QUESTIONS.length-1?'Ver resultado 🏁':'Próxima →'}</button>
+    </div>`;
+}
+
+function choose(i){
+  if(answered) return; answered=true;
+  const item=QUESTIONS[idx];
+  document.querySelectorAll('.opt').forEach(b=>{
+    const bi=+b.dataset.i; b.disabled=true;
+    if(bi===item.c){ b.classList.add('correct'); b.querySelector('.mark').textContent='✅'; }
+    if(bi===i && i!==item.c){ b.classList.add('wrong'); b.querySelector('.mark').textContent='❌'; }
+  });
+  const fb=document.getElementById('fb');
+  if(i===item.c){
+    score++; streak++; bestStreak=Math.max(bestStreak,streak);
+    fb.className='fb ok show'; fb.innerHTML=`<div class="fbtitle">✅ Acertou!</div>${item.fb}`;
+  } else {
+    streak=0;
+    fb.className='fb no show'; fb.innerHTML=`<div class="fbtitle">❌ Não foi dessa vez</div>${item.fb}`;
+  }
+  updateStreak();
+  document.getElementById('next').classList.add('show');
+}
+
+function updateStreak(){
+  if(streak>=2){ streakN.textContent=streak; streakEl.classList.add('show');
+    streakEl.classList.remove('pop'); void streakEl.offsetWidth; streakEl.classList.add('pop'); }
+  else streakEl.classList.remove('show');
+}
+
+function nextQ(){ idx++; if(idx>=QUESTIONS.length) showFinal(); else { render(); window.scrollTo({top:0,behavior:'smooth'}); } }
+
+function showFinal(){
+  pfill.style.width='100%'; counter.textContent='Concluído!'; streakEl.classList.remove('show');
+  document.getElementById('quiz').classList.add('hidden');
+  const fs=document.getElementById('finalScreen'); fs.classList.remove('hidden');
+  const pct=Math.round((score/QUESTIONS.length)*100);
+  let medal,msg;
+  if(pct===100){medal='🏆';msg='Perfeito! Você dominou o capítulo!';}
+  else if(pct>=80){medal='🥇';msg='Excelente! Você manda muito bem.';}
+  else if(pct>=60){medal='🥈';msg='Bom trabalho! Já está afiado.';}
+  else if(pct>=40){medal='🥉';msg='Tá no caminho — revise e tente de novo!';}
+  else {medal='📚';msg='Bora revisar o resumo e voltar mais forte!';}
+  fs.innerHTML=`
+    <div class="medal">${medal}</div>
+    <h2>${msg}</h2>
+    <div class="pct">${pct}%</div>
+    <div class="score">Você acertou ${score} de ${QUESTIONS.length} questões</div>
+    <div class="stats">
+      <div class="stat"><div class="big">${score}/${QUESTIONS.length}</div><div class="lbl">Acertos</div></div>
+      <div class="stat"><div class="big">🔥 ${bestStreak}</div><div class="lbl">Maior sequência</div></div>
+      <div class="stat"><div class="big">${pct}%</div><div class="lbl">Aproveitamento</div></div>
+    </div>
+    <button class="restart" onclick="restart()">🔄 Refazer o quiz</button>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(pct>=70) confetti();
+}
+
+function restart(){
+  idx=0; score=0; streak=0; bestStreak=0;
+  document.getElementById('finalScreen').classList.add('hidden');
+  document.getElementById('quiz').classList.remove('hidden');
+  render(); window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function confetti(){
+  const colors=['#3B82F6','#7C5CFF','#00A86B','#FF8A3D','#E53935','#FFD93D'];
+  for(let i=0;i<120;i++){
+    const c=document.createElement('div'); c.className='confetti';
+    c.style.left=Math.random()*100+'vw'; c.style.background=colors[Math.floor(Math.random()*colors.length)];
+    c.style.transform=`rotate(${Math.random()*360}deg)`;
+    const dur=2.5+Math.random()*2, delay=Math.random()*1.5;
+    c.style.animation=`fall ${dur}s ${delay}s linear forwards`;
+    document.body.appendChild(c); setTimeout(()=>c.remove(),(dur+delay)*1000+200);
+  }
+}
+const _s=document.createElement('style');
+_s.textContent=`@keyframes fall{to{transform:translateY(105vh) rotate(720deg); opacity:.2;}}`;
+document.head.appendChild(_s);
+
+render();
+</script>
+</body>
+</html>
